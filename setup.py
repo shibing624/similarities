@@ -49,5 +49,4 @@ setup(
         "gensim>=4.0.0"
     ],
     packages=find_packages(),
-    package_dir={"": "similarities"},
 )
