@@ -46,6 +46,5 @@ setup(
     install_requires=reqs.strip().split('\n'),
     packages=find_packages(exclude=['tests']),
     package_dir={'similarities': 'similarities'},
-    package_data={'similarities': ['*.*', '../LICENSE', '../README.*', '../*.txt', 'utils/*',
-                                   'data/*', ]}
+    package_data={'similarities': ['*.*', 'utils/*', 'data/*', ]}
 )
