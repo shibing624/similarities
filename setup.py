@@ -13,9 +13,6 @@ if sys.version_info < (3,):
 with open('README.md', 'r', encoding='utf-8') as f:
     readme = f.read()
 
-with open('requirements.txt', 'r', encoding='utf-8') as f:
-    reqs = f.read()
-
 setup(
     name='similarities',
     version=__version__,
@@ -43,6 +40,14 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
     keywords='similarities,Chinese Text Similarity Calculation Tool,similarity,word2vec',
-    install_requires=reqs.strip().split('\n'),
+    install_requires=[
+        "jieba>=0.39",
+        "loguru",
+        "transformers>=4.6.0",
+        "tqdm",
+        "scikit-learn",
+        "gensim>=4.0.0"
+    ],
     packages=find_packages(),
+    package_dir={"": "similarities"},
 )
