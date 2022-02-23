@@ -44,7 +44,5 @@ setup(
     ],
     keywords='similarities,Chinese Text Similarity Calculation Tool,similarity,word2vec',
     install_requires=reqs.strip().split('\n'),
-    packages=find_packages(exclude=['tests']),
-    package_dir={'similarities': 'similarities'},
-    package_data={'similarities': ['*.*', 'utils/*', 'data/*', ]}
+    packages=find_packages(),
 )
