@@ -4,6 +4,5 @@ authors:
 - family-names: "Xu"
   given-names: "Ming"
 title: "Similarities: Compute Similarity Score for humans"
-version: 0.0.3
 url: "https://github.com/shibing624/similarities"
 data-released: 2022-02-28
