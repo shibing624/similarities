@@ -46,7 +46,8 @@ setup(
         "transformers>=4.6.0",
         "tqdm",
         "scikit-learn",
-        "gensim>=4.0.0"
+        "gensim>=4.0.0",
+        "pandas",
     ],
     packages=find_packages(),
 )
