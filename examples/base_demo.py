@@ -8,10 +8,14 @@ generate sentence embeddings for a given list of sentences.
 import sys
 
 sys.path.append('..')
-from similarities import BertSimilarity
+from similarities.similarity import WSimilarity
+from loguru import logger
+
+logger.remove()
+logger.add(sys.stderr, level="INFO")
 
 if __name__ == '__main__':
-    model = BertSimilarity("shibing624/text2vec-base-chinese")  # 中文句向量模型(CoSENT)
+    model = Similarity("shibing624/text2vec-base-chinese")  # 中文句向量模型(CoSENT)
     # Embed a list of sentences
     sentences = ['如何更换花呗绑定银行卡',
                  '花呗更改绑定银行卡']
