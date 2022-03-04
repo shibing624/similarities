@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 @author:XuMing(xuming624@qq.com)
-@description: 
+@description:
+
+This package contains implementations of pairwise similarity queries.
 """
 
-from .similarity import BertSimilarity
+# bring classes directly into package namespace, to save some typing
