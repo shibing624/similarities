@@ -310,7 +310,7 @@ class HownetSimilarity(object):
     Computes hownet similarities between word embeddings and retrieves most
     similar terms for a given term.
     """
-    default_hownet_path = os.path.join(pwd_path, 'data', 'hownet.dat')
+    default_hownet_path = os.path.join(pwd_path, 'data', 'hownet.txt')
 
     def __init__(self, cilin_path: str = default_hownet_path, docs: List[str] = None):
         super().__init__()

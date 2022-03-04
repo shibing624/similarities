@@ -3,16 +3,16 @@
 @author:XuMing(xuming624@qq.com)
 @description: pip install gradio
 """
-
+from text2vec import Word2Vec
 import gradio as gr
-from similarities import BertSimilarity
+from similarities.termsim import WordEmbeddingSimilarity
 
-# 中文句向量模型(CoSENT)
-sim_model = BertSimilarity(model_name_or_path='shibing624/text2vec-base-chinese')
+wv_model = Word2Vec()
+sim_model = WordEmbeddingSimilarity(wv_model)
 
 
 def ai_text(sentence1, sentence2):
-    score = sim_model.similarity_score(sentence1, sentence2)
+    score = sim_model.similarity(sentence1, sentence2).numpy()[0][0]
     print("{} \t\t {} \t\t Score: {:.4f}".format(sentence1, sentence2, score))
 
     return score
@@ -33,7 +33,7 @@ if __name__ == '__main__':
                  inputs=[input1, input2],
                  outputs=[output_text],
                  # theme="grass",
-                 title="Chinese Text Matching Model shibing624/text2vec-base-chinese",
+                 title="Chinese Text Matching Model",
                  description="Copy or input Chinese text here. Submit and the machine will calculate the cosine score.",
                  article="Link to <a href='https://github.com/shibing624/similarities' style='color:blue;' target='_blank\'>Github REPO</a>",
                  examples=examples
