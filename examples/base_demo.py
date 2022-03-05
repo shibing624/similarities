@@ -8,7 +8,7 @@ generate sentence embeddings for a given list of sentences.
 import sys
 
 sys.path.append('..')
-from similarities.termsim import WordEmbeddingSimilarity
+from similarities.literalsim import WordEmbeddingSimilarity
 from text2vec import Word2Vec
 from loguru import logger
 

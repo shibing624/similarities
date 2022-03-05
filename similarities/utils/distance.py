@@ -7,7 +7,7 @@ from difflib import SequenceMatcher
 
 import numpy as np
 
-zero_bit = 0.000000001
+zero_bit = 1e-9
 
 
 def try_divide(x, y, val=0.0):
@@ -19,14 +19,18 @@ def try_divide(x, y, val=0.0):
     return val
 
 
-def cosine_distance(v1, v2):
+def cosine_distance(v1, v2, normalize=False):
     """
     余弦距离
+    normalize: True, 余弦值的范围是 [-1,+1] ，归一化到 [0,1]
     return cos score
     """
     up = np.dot(v1, v2)
     down = np.linalg.norm(v1) * np.linalg.norm(v2)
-    return try_divide(up, down)
+    score = try_divide(up, down)
+    if normalize:
+        score = 0.5 + 0.5 * score
+    return score
 
 
 def hamming_distance(v1, v2):  # 海明距离
@@ -34,8 +38,11 @@ def hamming_distance(v1, v2):  # 海明距离
     return bin(n & 0xffffffff).count('1')
 
 
-def euclidean_distance(v1, v2):  # 欧氏距离
-    return np.sqrt(np.sum(np.square(v1 - v2)))
+def euclidean_distance(v1, v2, normalize=False):  # 欧氏距离
+    score = np.sqrt(np.sum(np.square(v1 - v2)))
+    if normalize:
+        score = 1.0 / (1.0 + score)
+    return score
 
 
 def manhattan_distance(v1, v2):  # 曼哈顿距离
@@ -80,18 +87,6 @@ def jaccard_similarity_coefficient_distance(v1, v2):  # 杰卡德相似系数(Ja
     up = np.double(np.bitwise_and((v1 != v2), np.bitwise_or(v1 != 0, v2 != 0)).sum())
     down = np.double(np.bitwise_or(v1 != 0, v2 != 0).sum() + zero_bit)
     return try_divide(up, down)
-
-
-def wmd_distance(model, sent1_cut_list, sent2_cut_list):  # WMD距离
-    """
-    wmd 距离
-    :param model: gensim word2vec model
-    :param sent1_cut_list:
-    :param sent2_cut_list:
-    :return:
-    """
-    distance = model.wmdistance(sent1_cut_list, sent2_cut_list)
-    return distance
 
 
 def is_str_match(str1, str2, threshold=1.0):
@@ -160,37 +155,9 @@ def string_hash(source):
         return str(x)
 
 
-def sim_hash(text):
-    import jieba.analyse
-    seg = jieba.cut(text)
-    key_word = jieba.analyse.extract_tags('|'.join(seg), topK=20, withWeight=True, allowPOS=())
-    # 先按照权重排序，再按照词排序
-    key_list = []
-    for feature, weight in key_word:
-        weight = int(weight * 20)
-        temp = []
-        for f in string_hash(feature):
-            if f == '1':
-                temp.append(weight)
-            else:
-                temp.append(-weight)
-        key_list.append(temp)
-    content_list = np.sum(np.array(key_list), axis=0)
-    # 编码读不出来
-    if len(key_list) == 0:
-        return '00'
-    simhash = ''
-    for c in content_list:
-        if c > 0:
-            simhash = simhash + '1'
-        else:
-            simhash = simhash + '0'
-    return simhash
-
-
-def normalization(x):
+def max_min_normalize(x):
     """
-      归一化，最大最小值
+    最大最小值归一化
     :param x:
     :return:
     """
@@ -199,10 +166,10 @@ def normalization(x):
 
 def z_score(x, axis=0):
     """
-      标准化
-    :param x: arrary, numpy
+    z_score标准化
+    :param x: array, numpy
     :param axis: int, 0
-    :return: arrary, numpy
+    :return: np.array, numpy
     """
     x = np.array(x).astype(float)
     xr = np.rollaxis(x, axis=axis)
@@ -221,11 +188,9 @@ if __name__ == '__main__':
     print(euclidean_distance(vec1_test, vec2_test))
     print(cosine_distance(vec1_test, vec2_test))
     print(manhattan_distance(vec1_test, vec2_test))
-    print(euclidean_distance(vec1_test, vec2_test))
-    print(cosine_distance(vec1_test, vec2_test))
 
-    print('hamming_distance:', str1_test, str2_test, hamming_distance(sim_hash(str1_test), sim_hash(str2_test)))
+    print('strs:', str1_test, str2_test)
     print(edit_distance(str1_test, str2_test))
     print(num_of_common_sub_str(str1_test, str2_test))
-    print(normalization(vec1_test))  # 归一化（0-1）
+    print(max_min_normalize(vec1_test))  # 归一化（0-1）
     print(z_score(vec1_test))  # 标准化（0附近，正负）

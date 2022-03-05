@@ -6,5 +6,5 @@ authors:
   orcid: "https://orcid.org/0000-0003-3402-7159"
 title: "Similarities: Compute similarity score for humans"
 url: "https://github.com/shibing624/similarities"
-data-released: 2022-02-28
-version: 0.0.3
+data-released: 2022-03-05
+version: 0.0.4
