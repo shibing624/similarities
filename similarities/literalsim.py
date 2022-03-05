@@ -22,7 +22,7 @@ from similarities.utils.distance import cosine_distance
 from simhash import Simhash
 from similarities.utils.tfidf import TFIDF
 
-pwd_path = os.path.dirname(os.path.abspath(__file__))
+pwd_path = os.path.abspath(os.path.dirname(__file__))
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 

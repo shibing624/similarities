@@ -13,7 +13,7 @@ from text2vec import SentenceModel
 
 from similarities.similarity import cos_sim, semantic_search, dot_score
 
-pwd_path = os.path.dirname(os.path.abspath(__file__))
+pwd_path = os.path.abspath(os.path.dirname(__file__))
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -32,7 +32,7 @@ class BertSimilarity(object):
             self.add_documents(docs)
 
     def __len__(self):
-        """Get length of index."""
+        """Get length of docs."""
         return self.docs_embeddings.shape[0]
 
     def __str__(self):
@@ -44,7 +44,7 @@ class BertSimilarity(object):
 
         Parameters
         ----------
-        docs : iterable of list of str
+        docs : list of str
         """
         self.docs += docs
         docs_embeddings = self.get_vector(docs)
@@ -64,20 +64,72 @@ class BertSimilarity(object):
 
     def distance(self, text1, text2):
         """Compute cosine distance between two keys.
-        Calculate 1 - :meth:`~gensim.models.keyedvectors.KeyedVectors.similarity`.
+        """
+        return 1 - self.similarity(text1, text2)
+
+    def most_similar(self, query, topn=10):
+        result = []
+        query_embeddings = self.get_vector(query)
+        hits = semantic_search(query_embeddings, self.docs_embeddings, top_k=topn)
+        hits = hits[0]  # Get the hits for the first query
+
+        print("Input question:", query)
+        for hit in hits[0:topn]:
+            result.append((self.docs[hit['corpus_id']], round(hit['score'], 4)))
+            print("\t{:.3f}\t{}".format(hit['score'], self.docs[hit['corpus_id']]))
+
+        print("\n\n========\n")
+        return result
+
+
+
+class AnnoySimilarity(object):
+    """
+    Computes cosine similarities between word embeddings and retrieves most
+    similar terms for a given term.
+    """
+
+    def __init__(self, sentencemodel: SentenceModel, docs: List[str] = None):
+        # super().__init__()
+        self.sentencemodel = sentencemodel
+        self.docs = []
+        self.docs_embeddings = np.array([])
+        if docs is not None:
+            self.add_documents(docs)
+
+    def __len__(self):
+        """Get length of docs."""
+        return self.docs_embeddings.shape[0]
+
+    def __str__(self):
+        return "%s" % (self.__class__.__name__)
+
+    def add_documents(self, docs):
+        """
+        Extend the docs_embeddings with new documents.
 
         Parameters
         ----------
-        w1 : str
-            Input key.
-        w2 : str
-            Input key.
+        docs : list of str
+        """
+        self.docs += docs
+        docs_embeddings = self.get_vector(docs)
+        if self.docs_embeddings.size > 0:
+            self.docs_embeddings = np.vstack((self.docs_embeddings, docs_embeddings))
+        else:
+            self.docs_embeddings = docs_embeddings
+        logger.info(f"Add docs size: {len(docs)}, total size: {len(self.docs)}")
 
-        Returns
-        -------
-        float
-            Distance between `w1` and `w2`.
+    def get_vector(self, text):
+        return self.sentencemodel.encode(text)
 
+    def similarity(self, text1, text2, score_function=cos_sim):
+        text_emb1 = self.get_vector(text1)
+        text_emb2 = self.get_vector(text2)
+        return score_function(text_emb1, text_emb2)
+
+    def distance(self, text1, text2):
+        """Compute cosine distance between two keys.
         """
         return 1 - self.similarity(text1, text2)
 

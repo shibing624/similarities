@@ -8,11 +8,11 @@
 [![Wechat Group](http://vlog.sfyc.ltd/wechat_everyday/wxgroup_logo.png?imageView2/0/w/60/h/20)](#Contact)
 
 # Similarities
-Similarities is a toolkit for Compute Similarity Score between texts. 
+Similarities is a toolkit for similarity calculation and semantic search based on matching model. 
 
-相似度计算工具包，实现多种字面、语义匹配模型。
+similarities：相似度计算、语义匹配搜索工具包。
 
-**similarities**实现了Word2Vec、RankBM25、BERT、Sentence-BERT、CoSENT等多种文本表征、文本相似度计算模型，并在文本语义匹配（相似度计算）任务上比较了各模型的效果。
+**similarities**基于多种字面、语义匹配模型，实现了各模型的相似度计算、匹配搜索功能，python3开发，pip安装，开箱即用。
 
 
 **Guide**
