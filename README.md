@@ -159,14 +159,11 @@ query: 如何更换花呗绑定银行卡
 
 支持同义词词林（Cilin）、知网Hownet、词向量（WordEmbedding）、Tfidf、Simhash、BM25等算法的相似度计算和匹配搜索，常用于文本匹配冷启动。
 
-SimhashSimilarity, TfidfSimilarity, BM25Similarity, WordEmbeddingSimilarity, \
-    CilinSimilarity, HownetSimilarity
-
 示例[examples/literal_sim_demo.py](./examples/literal_sim_demo.py)
 
 ```python
-from similarities.literalsim import SimhashSimilarity, TfidfSimilarity, BM25Similarity, WordEmbeddingSimilarity, \
-    CilinSimilarity, HownetSimilarity
+from similarities.literalsim import SimhashSimilarity, TfidfSimilarity, BM25Similarity, \
+    WordEmbeddingSimilarity, CilinSimilarity, HownetSimilarity
 
 text1 = "如何更换花呗绑定银行卡"
 text2 = "花呗更改绑定银行卡"
@@ -234,4 +231,3 @@ version = {0.0.4}
 - [A Simple but Tough-to-Beat Baseline for Sentence Embeddings[Sanjeev Arora and Yingyu Liang and Tengyu Ma, 2017]](https://openreview.net/forum?id=SyK00v5xx)
 - [liuhuanyong/SentenceSimilarity](https://github.com/liuhuanyong/SentenceSimilarity)
 - [shibing624/text2vec](https://github.com/shibing624/text2vec)
-- 
