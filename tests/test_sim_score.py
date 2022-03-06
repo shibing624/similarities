@@ -8,10 +8,10 @@ import unittest
 
 sys.path.append('..')
 from text2vec import SentenceModel
-from similarities.semanticsim import BertSimilarity
+from similarities.similarity import Similarity
 
 sm = SentenceModel()
-bert_model = BertSimilarity(sm)
+bert_model = Similarity(sm)
 
 
 class IssueTestCase(unittest.TestCase):

@@ -1,145 +1,357 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2018 Vit Novotny <witiko@mail.muni.cz>
-# Licensed under the GNU LGPL v2.1 - http://www.gnu.org/licenses/lgpl.html
+"""
+@author:XuMing(xuming624@qq.com), Vit Novotny <witiko@mail.muni.cz>, lhy<lhy_in_blcu@126.com>
+@description:
+Licensed under the GNU LGPL v2.1 - http://www.gnu.org/licenses/lgpl.html
 
+This module provides classes that deal with sentence similarities from mean term vector.
+Adjust the gensim similarities Index to compute sentence similarities.
 """
-This module provides classes that deal with term similarities.
-Adjust the Index to compute term similarities.
-"""
-import math
-from loguru import logger
-from typing import Dict, List, Tuple, Set, Optional, Union
-import numpy as np
-import torch
-import jieba
-import jieba.posseg
-from text2vec import Word2Vec
-from similarities.similarity import cos_sim, Similarity, semantic_search
+
 import os
+from typing import List, Union
+
+import jieba
+import jieba.analyse
+import jieba.posseg
+import numpy as np
+from text2vec import Word2Vec
+from loguru import logger
 from similarities.utils.distance import cosine_distance
-from simhash import Simhash
+from similarities.utils.distance import sim_hash, hamming_distance
+from similarities.utils.rank_bm25 import BM25Okapi
 from similarities.utils.tfidf import TFIDF
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-class WordEmbeddingSimilarity(object):
+class SimhashSimilarity:
     """
-    Computes cosine similarities between word embeddings and retrieves most
-    similar terms for a given term.
-
+    Compute SimHash similarity between two sentences and retrieves most
+    similar sentence for a given corpus.
     """
 
-    def __init__(self, keyedvectors: Word2Vec, docs: List[str] = None):
-        """
-        Init WordEmbeddingSimilarity.
-        :param keyedvectors: ~text2vec.Word2Vec
-        :param docs: list of str
-        """
-        # super().__init__()
-        self.keyedvectors = keyedvectors
-        self.docs = []
-        self.docs_embeddings = np.array([])
-        if docs is not None:
-            self.add_documents(docs)
+    def __init__(self, corpus: List[str] = None):
+        self.corpus = []
+        self.corpus_embeddings = np.array([])
+        if corpus is not None:
+            self.add_corpus(corpus)
 
     def __len__(self):
-        """Get length of docs."""
-        return self.docs_embeddings.shape[0]
+        """Get length of corpus."""
+        return len(self.corpus)
 
     def __str__(self):
-        return "%s" % (self.__class__.__name__)
+        base = f"Similarity: {self.__class__.__name__}, matching_model: Simhash"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
 
-    def add_documents(self, docs):
-        """Extend the index with new documents.
+    def add_corpus(self, corpus: List[str]):
+        """
+        Extend the corpus with new documents.
 
         Parameters
         ----------
-        docs : iterable of list of str
+        corpus : list of str
         """
-        self.docs += docs
-        docs_embeddings = self.get_vector(docs)
-        if self.docs_embeddings.size > 0:
-            self.docs_embeddings = np.vstack((self.docs_embeddings, docs_embeddings))
+        self.corpus += corpus
+        corpus_embeddings = []
+        for sentence in corpus:
+            corpus_embeddings.append(self.simhash(sentence))
+            if len(corpus_embeddings) % 1000 == 0:
+                logger.debug(f"Progress, add corpus size: {len(corpus_embeddings)}")
+        if self.corpus_embeddings.size > 0:
+            self.corpus_embeddings = np.vstack((self.corpus_embeddings, corpus_embeddings))
         else:
-            self.docs_embeddings = docs_embeddings
-        logger.info(f"Add docs size: {len(docs)}, total size: {len(self.docs)}")
+            self.corpus_embeddings = np.array(corpus_embeddings)
+        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
+
+    def simhash(self, text: str):
+        """
+        Compute SimHash for a given text.
+        :param text: str
+        :return: hash code
+        """
+        return sim_hash(text)
+
+    def _sim_score(self, v1, v2):
+        """Compute hamming similarity between two embeddings."""
+        return (100 - hamming_distance(v1, v2) * 100 / 64) / 100
+
+    def similarity(self, text1: str, text2: str):
+        """
+        Compute hamming similarity between two texts.
+        :param text1:
+        :param text2:
+        :return:
+        """
+        v1 = self.simhash(text1)
+        v2 = self.simhash(text2)
+        similarity_score = self._sim_score(v1, v2)
+
+        return similarity_score
+
+    def distance(self, text1: str, text2: str):
+        """Compute cosine distance between two keys."""
+        return 1 - self.similarity(text1, text2)
+
+    def most_similar(self, query: str, topn: int = 10):
+        """
+        Find the topn most similar texts to the query against the corpus.
+        :param query: str
+        :param topn: int
+        :return: list of tuples (text, similarity)
+        """
+        result = []
+        query_emb = self.simhash(query)
+        for (corpus_id, doc), doc_emb in zip(enumerate(self.corpus), self.corpus_embeddings):
+            score = self._sim_score(query_emb, doc_emb)
+            result.append((corpus_id, doc, score))
+        result.sort(key=lambda x: x[2], reverse=True)
+        return result[:topn]
+
+
+class TfidfSimilarity:
+    """
+    Compute TFIDF similarity between two sentences and retrieves most
+    similar sentence for a given corpus.
+    """
+
+    def __init__(self, corpus: List[str] = None):
+        super().__init__()
+        self.corpus = []
+        self.corpus_embeddings = np.array([])
+        self.tfidf = TFIDF()
+        if corpus is not None:
+            self.add_corpus(corpus)
+
+    def __len__(self):
+        """Get length of corpus."""
+        return len(self.corpus)
+
+    def __str__(self):
+        base = f"Similarity: {self.__class__.__name__}, matching_model: Tfidf"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
+
+    def add_corpus(self, corpus: List[str]):
+        """
+        Extend the corpus with new documents.
+
+        Parameters
+        ----------
+        corpus : list of str
+        """
+        self.corpus += corpus
+        corpus_embeddings = []
+        for sentence in corpus:
+            corpus_embeddings.append(self.tfidf.get_tfidf(sentence))
+            if len(corpus_embeddings) % 1000 == 0:
+                logger.debug(f"Progress, add corpus size: {len(corpus_embeddings)}")
+        if self.corpus_embeddings.size > 0:
+            self.corpus_embeddings = np.vstack((self.corpus_embeddings, corpus_embeddings))
+        else:
+            self.corpus_embeddings = np.array(corpus_embeddings)
+        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
+
+    def similarity(self, text1: str, text2: str):
+        """
+        Compute cosine similarity score between two sentences.
+        :param text1:
+        :param text2:
+        :return:
+        """
+        feature1, feature2 = self.tfidf.get_tfidf(text1), self.tfidf.get_tfidf(text2)
+        return cosine_distance(np.array(feature1), np.array(feature2))
+
+    def distance(self, text1: str, text2: str):
+        """Compute cosine distance between two keys."""
+        return 1 - self.similarity(text1, text2)
+
+    def most_similar(self, query: str, topn: int = 10):
+        """Find the topn most similar texts to the query against the corpus."""
+        result = []
+        query_emb = self.tfidf.get_tfidf(query)
+        for (corpus_id, doc), doc_emb in zip(enumerate(self.corpus), self.corpus_embeddings):
+            score = cosine_distance(query_emb, doc_emb, normalize=True)
+            result.append((corpus_id, doc, score))
+        result.sort(key=lambda x: x[2], reverse=True)
+        return result[:topn]
+
+
+class BM25Similarity:
+    """
+    Compute BM25OKapi similarity between two sentences and retrieves most
+    similar sentence for a given corpus.
+    """
+
+    def __init__(self, corpus: List[str] = None):
+        super().__init__()
+        self.corpus = []
+        self.bm25 = None
+        if corpus is not None:
+            self.add_corpus(corpus)
+
+    def __len__(self):
+        """Get length of corpus."""
+        return len(self.corpus)
+
+    def __str__(self):
+        base = f"Similarity: {self.__class__.__name__}, matching_model: BM25"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
+
+    def add_corpus(self, corpus: List[str]):
+        """
+        Extend the corpus with new documents.
+
+        Parameters
+        ----------
+        corpus : list of str
+        """
+        self.corpus += corpus
+        corpus_seg = [jieba.lcut(d) for d in self.corpus]
+        self.bm25 = BM25Okapi(corpus_seg)
+        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
+
+    def similarity(self, text1, text2):
+        """
+        Compute similarity score between two sentences.
+        :param text1:
+        :param text2:
+        :return:
+        """
+        raise NotImplementedError()
+
+    def distance(self, text1, text2):
+        """Compute distance between two sentences."""
+        raise NotImplementedError()
+
+    def most_similar(self, query, topn=10):
+        tokens = jieba.lcut(query)
+        if not self.bm25:
+            raise ValueError("BM25 model is not initialized. Please add_corpus first, eg. `add_corpus(corpus)`")
+        scores = self.bm25.get_scores(tokens)
+        result = [(corpus_id, self.corpus[corpus_id], score) for corpus_id, score in enumerate(scores)]
+        result.sort(key=lambda x: x[2], reverse=True)
+        return result[:topn]
+
+
+class WordEmbeddingSimilarity:
+    """
+    Compute Word2Vec similarity between two sentences and retrieves most
+    similar sentence for a given corpus.
+    """
+
+    def __init__(self, keyedvectors, corpus: List[str] = None):
+        """
+        Init WordEmbeddingSimilarity.
+        :param keyedvectors: ~text2vec.Word2Vec
+        :param corpus: list of str
+        """
+        if isinstance(keyedvectors, Word2Vec):
+            self.keyedvectors = keyedvectors
+        elif isinstance(keyedvectors, str):
+            self.keyedvectors = Word2Vec(keyedvectors)
+        else:
+            raise ValueError("keyedvectors must be ~text2vec.Word2Vec or Word2Vec model name")
+        self.corpus = []
+        self.corpus_embeddings = np.array([])
+        if corpus is not None:
+            self.add_corpus(corpus)
+
+    def __len__(self):
+        """Get length of corpus."""
+        return len(self.corpus)
+
+    def __str__(self):
+        base = f"Similarity: {self.__class__.__name__}, matching_model: Word2Vec"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
+
+    def add_corpus(self, corpus: List[str]):
+        """
+        Extend the corpus with new documents.
+
+        Parameters
+        ----------
+        corpus : list of str
+        """
+        self.corpus += corpus
+        corpus_embeddings = self.get_vector(corpus)
+        if self.corpus_embeddings.size > 0:
+            self.corpus_embeddings = np.vstack((self.corpus_embeddings, corpus_embeddings))
+        else:
+            self.corpus_embeddings = corpus_embeddings
+        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
     def get_vector(self, text):
         return self.keyedvectors.encode(text)
 
-    def similarity(self, text1, text2, score_function=cos_sim):
-        text_emb1 = self.get_vector(text1)
-        text_emb2 = self.get_vector(text2)
-        return score_function(text_emb1, text_emb2)
+    def similarity(self, text1: str, text2: str):
+        """Compute cosine similarity between two texts."""
+        v1 = self.get_vector(text1)
+        v2 = self.get_vector(text2)
+        return cosine_distance(v1, v2)
 
-    def distance(self, text1, text2):
-        """Compute cosine distance between two keys.
-        Calculate 1 - :meth:`~gensim.models.keyedvectors.KeyedVectors.similarity`.
-
-        Parameters
-        ----------
-        w1 : str
-            Input key.
-        w2 : str
-            Input key.
-
-        Returns
-        -------
-        float
-            Distance between `w1` and `w2`.
-
-        """
+    def distance(self, text1: str, text2: str):
+        """Compute cosine distance between two texts."""
         return 1 - self.similarity(text1, text2)
 
-    def most_similar(self, query, topn=10):
+    def most_similar(self, query: str, topn: int = 10):
+        """
+        Find the topn most similar texts to the query against the corpus.
+        :param query: str
+        :param topn: int
+        :return:
+        """
         result = []
-        query_embeddings = self.get_vector(query)
-        hits = semantic_search(query_embeddings, self.docs_embeddings, top_k=topn)
-        hits = hits[0]  # Get the hits for the first query
-
-        print("Input question:", query)
-        for hit in hits[0:topn]:
-            result.append((self.docs[hit['corpus_id']], round(hit['score'], 4)))
-            print("\t{:.3f}\t{}".format(hit['score'], self.docs[hit['corpus_id']]))
-
-        print("\n\n========\n")
-        return result
+        query_emb = self.get_vector(query)
+        for (corpus_id, doc), doc_emb in zip(enumerate(self.corpus), self.corpus_embeddings):
+            score = cosine_distance(query_emb, doc_emb, normalize=True)
+            result.append((corpus_id, doc, score))
+        result.sort(key=lambda x: x[2], reverse=True)
+        return result[:topn]
 
 
-class CilinSimilarity(object):
+class CilinSimilarity:
     """
-    Computes cilin similarities between word embeddings and retrieves most
-    similar terms for a given term.
+    Compute Cilin similarity between two sentences and retrieves most
+    similar sentence for a given corpus.
     """
-    default_cilin_path = os.path.join(pwd_path, 'data', 'cilin.txt')
+    default_cilin_path = os.path.join(pwd_path, 'data/cilin.txt')
 
-    def __init__(self, cilin_path: str = default_cilin_path, docs: List[str] = None):
+    def __init__(self, cilin_path: str = default_cilin_path, corpus: List[str] = None):
         super().__init__()
         self.cilin_dict = self.load_cilin_dict(cilin_path)  # Cilin(词林) semantic dictionary
-        self.docs = []
-        if docs is not None:
-            self.add_documents(docs)
+        self.corpus = []
+        if corpus is not None:
+            self.add_corpus(corpus)
 
     def __len__(self):
-        """Get length of index."""
-        return len(self.docs)
+        """Get length of corpus."""
+        return len(self.corpus)
 
     def __str__(self):
-        return "%s" % (self.__class__.__name__)
+        base = f"Similarity: {self.__class__.__name__}, matching_model: Cilin"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
 
-    def add_documents(self, docs):
-        """Extend the index with new documents.
+    def add_corpus(self, corpus: List[str]):
+        """
+        Extend the corpus with new documents.
 
         Parameters
         ----------
-        docs : iterable of list of str
+        corpus : list of str
         """
-        self.docs += docs
-        logger.info(f"Add docs size: {len(docs)}, total size: {len(self.docs)}")
+        self.corpus += corpus
+        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
     @staticmethod
     def load_cilin_dict(path):
@@ -160,7 +372,7 @@ class CilinSimilarity(object):
             sem_dict[word] = sem_type.split(';')
         return sem_dict
 
-    def _compute_word_sim(self, word1, word2):
+    def _word_sim(self, word1, word2):
         """
         比较计算词语之间的相似度，取max最大值
         :param word1:
@@ -169,13 +381,13 @@ class CilinSimilarity(object):
         """
         sems_word1 = self.cilin_dict.get(word1, [])
         sems_word2 = self.cilin_dict.get(word2, [])
-        score_list = [self._compute_sem(sem_word1, sem_word2) for sem_word1 in sems_word1 for sem_word2 in sems_word2]
+        score_list = [self._semantic_sim(sem_word1, sem_word2) for sem_word1 in sems_word1 for sem_word2 in sems_word2]
         if score_list:
             return max(score_list)
         else:
             return 0
 
-    def _compute_sem(self, sem1, sem2):
+    def _semantic_sim(self, sem1, sem2):
         """
         基于语义计算词语相似度
         :param sem1:
@@ -195,9 +407,9 @@ class CilinSimilarity(object):
                     score += 1
         return score / 10
 
-    def similarity(self, text1, text2):
+    def similarity(self, text1: str, text2: str):
         """
-        基于词相似度计算句子相似度
+        Compute Cilin similarity between two texts.
         :param text1:
         :param text2:
         :return:
@@ -207,58 +419,62 @@ class CilinSimilarity(object):
         score_words1 = []
         score_words2 = []
         for word1 in words1:
-            score = max(self._compute_word_sim(word1, word2) for word2 in words2)
+            score = max(self._word_sim(word1, word2) for word2 in words2)
             score_words1.append(score)
         for word2 in words2:
-            score = max(self._compute_word_sim(word2, word1) for word1 in words1)
+            score = max(self._word_sim(word2, word1) for word1 in words1)
             score_words2.append(score)
         similarity_score = max(sum(score_words1) / len(words1), sum(score_words2) / len(words2))
 
         return similarity_score
 
-    def distance(self, text1, text2):
-        """Compute cosine distance between two keys."""
+    def distance(self, text1: str, text2: str):
+        """Compute cosine distance between two texts."""
         return 1 - self.similarity(text1, text2)
 
-    def most_similar(self, query, topn=10):
+    def most_similar(self, query: str, topn: int = 10):
+        """Find the topn most similar texts to the query against the corpus."""
         result = []
-        for doc in self.docs:
+        for corpus_id, doc in enumerate(self.corpus):
             score = self.similarity(query, doc)
-            result.append((doc, round(score, 4)))
-        result.sort(key=lambda x: x[1], reverse=True)
+            result.append((corpus_id, doc, score))
+        result.sort(key=lambda x: x[2], reverse=True)
         return result[:topn]
 
 
-class HownetSimilarity(object):
+class HownetSimilarity:
     """
-    Computes hownet similarities between word embeddings and retrieves most
-    similar terms for a given term.
+    Compute Hownet similarity between two sentences and retrieves most
+    similar sentence for a given corpus.
     """
-    default_hownet_path = os.path.join(pwd_path, 'data', 'hownet.txt')
+    default_hownet_path = os.path.join(pwd_path, 'data/hownet.txt')
 
-    def __init__(self, cilin_path: str = default_hownet_path, docs: List[str] = None):
-        super().__init__()
-        self.hownet_dict = self.load_hownet_dict(cilin_path)  # semantic dictionary
-        self.docs = []
-        if docs is not None:
-            self.add_documents(docs)
+    def __init__(self, hownet_path: str = default_hownet_path, corpus: List[str] = None):
+        self.hownet_dict = self.load_hownet_dict(hownet_path)  # semantic dictionary
+        self.corpus = []
+        if corpus is not None:
+            self.add_corpus(corpus)
 
     def __len__(self):
-        """Get length of index."""
-        return len(self.docs)
+        """Get length of corpus."""
+        return len(self.corpus)
 
     def __str__(self):
-        return "%s" % (self.__class__.__name__)
+        base = f"Similarity: {self.__class__.__name__}, matching_model: Hownet"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
 
-    def add_documents(self, docs):
-        """Extend the index with new documents.
+    def add_corpus(self, corpus: List[str]):
+        """
+        Extend the corpus with new documents.
 
         Parameters
         ----------
-        docs : iterable of list of str
+        corpus : list of str
         """
-        self.docs += docs
-        logger.info(f"Add docs size: {len(docs)}, total size: {len(self.docs)}")
+        self.corpus += corpus
+        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
     @staticmethod
     def load_hownet_dict(path):
@@ -271,25 +487,25 @@ class HownetSimilarity(object):
             hownet_dict[word] = word_def.split(',')
         return hownet_dict
 
-    def _compute_sem(self, sem1, sem2):
+    def _semantic_sim(self, sem1, sem2):
         """计算语义相似度"""
         sem_inter = set(sem1).intersection(set(sem2))
         sem_union = set(sem1).union(set(sem2))
         return float(len(sem_inter)) / float(len(sem_union))
 
-    def _compute_word_sim(self, word1, word2):
+    def _word_sim(self, word1, word2):
         """比较两个词语之间的相似度"""
-        DEFS_word1 = self.hownet_dict.get(word1, [])
-        DEFS_word2 = self.hownet_dict.get(word2, [])
-        scores = [self._compute_sem(DEF_word1, DEF_word2) for DEF_word1 in DEFS_word1 for DEF_word2 in DEFS_word2]
+        sems_word1 = self.hownet_dict.get(word1, [])
+        sems_words = self.hownet_dict.get(word2, [])
+        scores = [self._semantic_sim(sem_word1, sem_word2) for sem_word1 in sems_word1 for sem_word2 in sems_words]
         if scores:
             return max(scores)
         else:
             return 0
 
-    def similarity(self, text1, text2):
+    def similarity(self, text1: str, text2: str):
         """
-        基于词相似度计算句子相似度
+        Computer Hownet similarity between two texts.
         :param text1:
         :param text2:
         :return:
@@ -299,217 +515,24 @@ class HownetSimilarity(object):
         score_words1 = []
         score_words2 = []
         for word1 in words1:
-            score = max(self._compute_word_sim(word1, word2) for word2 in words2)
+            score = max(self._word_sim(word1, word2) for word2 in words2)
             score_words1.append(score)
         for word2 in words2:
-            score = max(self._compute_word_sim(word2, word1) for word1 in words1)
+            score = max(self._word_sim(word2, word1) for word1 in words1)
             score_words2.append(score)
         similarity_score = max(sum(score_words1) / len(words1), sum(score_words2) / len(words2))
 
         return similarity_score
 
-    def distance(self, text1, text2):
+    def distance(self, text1: str, text2: str):
         """Compute cosine distance between two keys."""
         return 1 - self.similarity(text1, text2)
 
-    def most_similar(self, query, topn=10):
+    def most_similar(self, query: str, topn: int = 10):
+        """Find the topn most similar texts to the query against the corpus."""
         result = []
-        for doc in self.docs:
+        for corpus_id, doc in enumerate(self.corpus):
             score = self.similarity(query, doc)
-            result.append((doc, round(score, 4)))
-        result.sort(key=lambda x: x[1], reverse=True)
+            result.append((corpus_id, doc, score))
+        result.sort(key=lambda x: x[2], reverse=True)
         return result[:topn]
-
-
-class SimhashSimilarity(object):
-    """
-    Computes Simhash similarities between word embeddings and retrieves most
-    similar terms for a given term.
-    """
-
-    def __init__(self, docs: List[str] = None, hashbits=64):
-        super().__init__()
-        self.docs = []
-        self.hashbits = hashbits
-        self.docs_embeddings = np.array([])
-        if docs is not None:
-            self.add_documents(docs)
-
-    def __len__(self):
-        """Get length of index."""
-        return len(self.docs)
-
-    def __str__(self):
-        return "%s" % (self.__class__.__name__)
-
-    def add_documents(self, docs):
-        """Extend the index with new documents.
-
-        Parameters
-        ----------
-        docs : iterable of list of str
-        """
-        self.docs += docs
-        docs_embeddings = []
-        for doc in docs:
-            doc_emb = self._get_code(doc)
-            docs_embeddings.append(doc_emb)
-            if len(docs_embeddings) % 10000 == 0:
-                logger.debug(f"Progress, add docs size: {len(docs_embeddings)}")
-        if self.docs_embeddings.size > 0:
-            self.docs_embeddings = np.vstack((self.docs_embeddings, docs_embeddings))
-        else:
-            self.docs_embeddings = np.array(docs_embeddings)
-        logger.info(f"Add docs size: {len(docs)}, total size: {len(self.docs)}")
-
-    def _hamming_distance(self, code_s1, code_s2):
-        """利用64位数，计算海明距离"""
-        x = (code_s1 ^ code_s2) & ((1 << self.hashbits) - 1)
-        ans = 0
-        while x:
-            ans += 1
-            x &= x - 1
-        return ans
-
-    def _get_features(self, string):
-        """
-        对全文进行分词,提取全文特征,使用词性将虚词等无关字符去重
-        :param string:
-        :return:
-        """
-        word_list = [word.word for word in jieba.posseg.cut(string) if
-                     word.flag[0] not in ['u', 'x', 'w', 'o', 'p', 'c', 'm', 'q']]
-        return word_list
-
-    def _get_code(self, string):
-        """对全文进行编码"""
-        return Simhash(self._get_features(string)).value
-
-    def similarity(self, text1, text2):
-        """
-        计算句子间的海明距离
-        :param text1:
-        :param text2:
-        :return:
-        """
-        code_s1 = self._get_code(text1)
-        code_s2 = self._get_code(text2)
-        similarity_score = (100 - self._hamming_distance(code_s1, code_s2) * 100 / self.hashbits) / 100
-
-        return similarity_score
-
-    def distance(self, text1, text2):
-        """Compute cosine distance between two keys."""
-        return 1 - self.similarity(text1, text2)
-
-    def most_similar(self, query, topn=10):
-        result = []
-        query_emb = self._get_code(query)
-        for doc, doc_emb in zip(self.docs, self.docs_embeddings):
-            score = (100 - self._hamming_distance(query_emb, doc_emb) * 100 / self.hashbits) / 100
-            result.append((doc, round(score, 4)))
-        result.sort(key=lambda x: x[1], reverse=True)
-        return result[:topn]
-
-
-class TfidfSimilarity(object):
-    """
-    Computes Tfidf similarities between word embeddings and retrieves most
-    similar texts for a given text.
-    """
-
-    def __init__(self, docs: List[str] = None):
-        super().__init__()
-        self.docs = []
-        self.docs_embeddings = np.array([])
-        self.tfidf = TFIDF()
-        if docs is not None:
-            self.add_documents(docs)
-
-    def __len__(self):
-        """Get length of index."""
-        return len(self.docs)
-
-    def __str__(self):
-        return "%s" % (self.__class__.__name__)
-
-    def add_documents(self, docs):
-        """Extend the index with new documents.
-
-        Parameters
-        ----------
-        docs : iterable of list of str
-        """
-        self.docs += docs
-        docs_embeddings = np.array(self.tfidf.get_tfidf(docs))
-        if self.docs_embeddings.size > 0:
-            self.docs_embeddings = np.vstack((self.docs_embeddings, docs_embeddings))
-        else:
-            self.docs_embeddings = docs_embeddings
-        logger.info(f"Add docs size: {len(docs)}, total size: {len(self.docs)}")
-
-    def similarity(self, text1, text2):
-        """
-        基于tfidf计算句子间的余弦相似度
-        :param text1:
-        :param text2:
-        :return:
-        """
-        tfidf_features = self.tfidf.get_tfidf([text1, text2])
-        return cosine_distance(np.array(tfidf_features[0]), np.array(tfidf_features[1]))
-
-    def distance(self, text1, text2):
-        """Compute cosine distance between two keys."""
-        return 1 - self.similarity(text1, text2)
-
-    def most_similar(self, query, topn=10):
-        result = []
-        query_emb = np.array(self.tfidf.get_tfidf([query]))
-        for doc, doc_emb in zip(self.docs, self.docs_embeddings):
-            score = cosine_distance(query_emb, doc_emb)
-            result.append((doc, round(score, 4)))
-        result.sort(key=lambda x: x[1], reverse=True)
-        return result[:topn]
-
-
-if __name__ == '__main__':
-    wm = Word2Vec()
-    list_of_docs = ["This is a test1", "This is a test2", "This is a test3"]
-    list_of_docs2 = ["that is test4", "that is a test5", "that is a test6"]
-    m = WordEmbeddingSimilarity(wm, list_of_docs)
-    m.add_documents(list_of_docs2)
-    v = m.get_vector("This is a test1")
-    print(v[:10], v.shape)
-    print(m.similarity("This is a test1", "that is a test5"))
-    print(m.distance("This is a test1", "that is a test5"))
-    print(m.most_similar("This is a test1"))
-
-    text1 = '周杰伦是一个歌手'
-    text2 = '刘若英是个演员'
-    m = CilinSimilarity()
-    print(m.similarity(text1, text2))
-    print(m.distance(text1, text2))
-    zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
-    m.add_documents(zh_list)
-    print(m.most_similar('刘若英是演员'))
-
-    m = HownetSimilarity()
-    print(m.similarity(text1, text2))
-    print(m.distance(text1, text2))
-    zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
-    m.add_documents(zh_list)
-    print(m.most_similar('刘若英是演员'))
-
-    m = SimhashSimilarity()
-    print(m.similarity(text1, text2))
-    print(m.distance(text1, text2))
-    zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
-    m.add_documents(zh_list)
-    print(m.most_similar('刘若英是演员'))
-
-    m = TfidfSimilarity()
-    print(m.similarity(text1, text2))
-    print(m.distance(text1, text2))
-    zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌', '我不是演员吗']
-    m.add_documents(zh_list)
-    print(m.most_similar('刘若英是演员'))

@@ -5,13 +5,13 @@
 """
 
 import queue
-from enum import Enum
 from typing import List, Union
 
 import numpy as np
 import torch
 import torch.nn.functional
 from loguru import logger
+from text2vec import SentenceModel
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -107,11 +107,14 @@ def semantic_search(
 
     :param query_embeddings: A 2 dimensional tensor with the query embeddings.
     :param corpus_embeddings: A 2 dimensional tensor with the corpus embeddings.
-    :param query_chunk_size: Process 100 queries simultaneously. Increasing that value increases the speed, but requires more memory.
-    :param corpus_chunk_size: Scans the corpus 100k entries at a time. Increasing that value increases the speed, but requires more memory.
+    :param query_chunk_size: Process 100 queries simultaneously. Increasing that value increases the speed, but
+        requires more memory.
+    :param corpus_chunk_size: Scans the corpus 100k entries at a time. Increasing that value increases the speed,
+        but requires more memory.
     :param top_k: Retrieve top k matching entries.
     :param score_function: Funtion for computing scores. By default, cosine similarity.
-    :return: Returns a sorted list with decreasing cosine similarity scores. Entries are dictionaries with the keys 'corpus_id' and 'score'
+    :return: Returns a sorted list with decreasing cosine similarity scores. Entries are dictionaries with the
+        keys 'corpus_id' and 'score'
     """
 
     if isinstance(query_embeddings, (np.ndarray, np.generic)):
@@ -174,8 +177,10 @@ def paraphrase_mining_embeddings(
     other sentences and returns a list with the pairs that have the highest cosine similarity score.
 
     :param embeddings: A tensor with the embeddings
-    :param query_chunk_size: Search for most similar pairs for #query_chunk_size at the same time. Decrease, to lower memory footprint (increases run-time).
-    :param corpus_chunk_size: Compare a sentence simultaneously against #corpus_chunk_size other sentences. Decrease, to lower memory footprint (increases run-time).
+    :param query_chunk_size: Search for most similar pairs for #query_chunk_size at the same time. Decrease, to lower
+        memory footprint (increases run-time).
+    :param corpus_chunk_size: Compare a sentence simultaneously against #corpus_chunk_size other sentences. Decrease,
+        to lower memory footprint (increases run-time).
     :param max_pairs: Maximal number of text pairs returned.
     :param top_k: For each sentence, we retrieve up to top_k other sentences
     :param score_function: Function for computing scores. By default, cosine similarity.
@@ -302,146 +307,95 @@ def community_detection(embeddings, threshold=0.75, min_community_size=10, init_
     return unique_communities
 
 
-class EncoderType(Enum):
-    FIRST_LAST_AVG = 0
-    LAST_AVG = 1
-    CLS = 2
-    POOLER = 3
-    MEAN = 4
-
-    def __str__(self):
-        return self.name
-
-    @staticmethod
-    def from_string(s):
-        try:
-            return EncoderType[s]
-        except KeyError:
-            raise ValueError()
-
-
 class Similarity:
     """
-    Compute cosine similarity of a dynamic query against a corpus of documents ('the index').
+    Compute similarity:
+    1. Compute the similarity between two sentences
+    2. Retrieves most similar sentence of a query against a corpus of documents.
 
     The index supports adding new documents dynamically.
     """
 
-    def __init__(self, model_name_or_path=None, docs=None):
+    def __init__(self, sentence_model: Union[str, SentenceModel], corpus: List[str] = None):
         """
-
-        Parameters
-        ----------
-        output_prefix : str
-            Prefix for shard filename. If None, a random filename in temp will be used.
-        docs : iterable of list of (int, number)
-            Corpus in streamed Gensim bag-of-words format.
+        Initialize the similarity object.
+        :param sentence_model: Model to use for sentence embeddings.
+        :param corpus: Corpus of documents to use for similarity queries.
         """
-        self.model_name_or_path = model_name_or_path
-        self.model = None
-        logger.debug(f'Loading model {model_name_or_path}')
-        logger.debug(f"Device: {device}")
-
-        self.normalize = True
-        self.keyedvectors = None
-        self.docs = docs
-        self.norm = False
-        if docs is not None:
-            self.add_documents(docs)
+        if isinstance(sentence_model, SentenceModel):
+            self.sentence_model = sentence_model
+        elif isinstance(sentence_model, str):
+            self.sentence_model = SentenceModel(sentence_model)
+        else:
+            raise ValueError("sentence_model must be either a SentenceModel or a model name of SentenceTransformer.")
+        self.corpus = []
+        self.corpus_embeddings = np.array([])
+        if corpus is not None:
+            self.add_corpus(corpus)
 
     def __len__(self):
-        """Get length of index."""
-        return self.docs.shape[0]
+        """Get length of corpus."""
+        return len(self.corpus)
 
     def __str__(self):
-        return "%s" % (self.__class__.__name__)
+        base = f"Similarity: {self.__class__.__name__}, matching_model: {self.sentence_model}"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
 
-    def add_documents(self, corpus):
-        """Extend the index with new documents.
+    def add_corpus(self, corpus: List[str]):
+        """
+        Extend the corpus with new documents.
 
         Parameters
         ----------
-        corpus : iterable of list of (int, number)
-            Corpus in BoW format.
+        corpus : list of str
         """
-        for doc in corpus:
-            self.docs.append(doc)
-            if len(self.docs) % 10000 == 0:
-                logger.info("PROGRESS: fresh_shard size=%i", len(self.docs))
+        self.corpus += corpus
+        docs_embeddings = self.get_vector(corpus)
+        if self.corpus_embeddings.size > 0:
+            self.corpus_embeddings = np.vstack((self.corpus_embeddings, docs_embeddings))
+        else:
+            self.corpus_embeddings = docs_embeddings
+        logger.info(f"Add docs size: {len(corpus)}, total size: {len(self.corpus)}")
 
-    def get_vector(self, text, norm=False):
-        """Get the key's vector, as a 1D numpy array.
-
-        Parameters
-        ----------
-
-        text : str
-            Key for vector to return.
-        norm : bool, optional
-            If True, the resulting vector will be L2-normalized (unit Euclidean length).
-
-        Returns
-        -------
-
-        numpy.ndarray
-            Vector for the specified key.
-
-        Raises
-        ------
-
-        KeyError
-            If the given key doesn't exist.
-
+    def get_vector(self, text: Union[str, List[str]]):
         """
-        pass
-
-    def similarity(
-            self, text1: Union[List[str], str], text2: Union[List[str], str]
-    ) -> Union[np.ndarray, torch.Tensor]:
+        Returns the embeddings for a batch of sentences.
+        :param text:
+        :return:
         """
-        Compute similarity between two list of texts.
-        :param text1: list, sentence1 list
-        :param text2: list, sentence2 list
-        :return: return: Matrix with res[i][j]  = cos_sim(a[i], b[j])
+        return self.sentence_model.encode(text)
+
+    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]], score_function=cos_sim):
         """
-        if not text1 or not text2:
-            return np.array([])
-        if isinstance(text1, str):
-            text1 = [text1]  # type: ignore
-        if isinstance(text2, str):
-            text2 = [text2]  # type: ignore
-        pass
-
-    def distance(self, text1: Union[List[str], str], text2: Union[List[str], str]):
-        """Compute cosine distance between two keys.
-        Calculate 1 - :meth:`~gensim.models.keyedvectors.KeyedVectors.similarity`.
-
-        Parameters
-        ----------
-        w1 : str
-            Input key.
-        w2 : str
-            Input key.
-
-        Returns
-        -------
-        float
-            Distance between `w1` and `w2`.
-
+        Compute similarity between two texts.
+        :param text1: list of str or str
+        :param text2: list of str or str
+        :param score_function: function to compute similarity, default cos_sim
+        :return: similarity score, torch.Tensor, Matrix with res[i][j] = cos_sim(a[i], b[j])
         """
+        text_emb1 = self.get_vector(text1)
+        text_emb2 = self.get_vector(text2)
+        return score_function(text_emb1, text_emb2)
+
+    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+        """Compute cosine distance between two texts."""
         return 1 - self.similarity(text1, text2)
 
-    def most_similar(self, query: Union[List[str], str], topn=10, threshold=0, exponent=2.0):
+    def most_similar(self, query: str, topn: int = 10):
         """
-        Get topn similar text
-        :param query: str, query text
-        :param top_k: int, top_k
-        :return: list, top_k similar text
+        Find the topn most similar texts to the query against the corpus.
+        :param query: str
+        :param topn: int
+        :return:
         """
-        if query not in self.keyedvectors:
-            logger.debug('an out-of-dictionary term "%s"', query)
-        else:
-            most_similar = self.keyedvectors.most_similar(query, topn=topn)
-            for t2, similarity in most_similar:
-                if similarity > threshold:
-                    yield (t2, similarity ** exponent)
+        result = []
+        query_embeddings = self.get_vector(query)
+        hits = semantic_search(query_embeddings, self.corpus_embeddings, top_k=topn)
+        hits = hits[0]  # Get the first query result when query is string
+
+        for hit in hits[0:topn]:
+            result.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
+
+        return result

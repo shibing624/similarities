@@ -25,6 +25,10 @@ def cosine_distance(v1, v2, normalize=False):
     normalize: True, 余弦值的范围是 [-1,+1] ，归一化到 [0,1]
     return cos score
     """
+    if isinstance(v1, list):
+        v1 = np.array(v1)
+    if isinstance(v2, list):
+        v2 = np.array(v2)
     up = np.dot(v1, v2)
     down = np.linalg.norm(v1) * np.linalg.norm(v2)
     score = try_divide(up, down)
@@ -154,6 +158,33 @@ def string_hash(source):
 
         return str(x)
 
+def sim_hash(text):
+    import jieba
+    import jieba.analyse
+    seg = jieba.cut(text)
+    key_word = jieba.analyse.extract_tags('|'.join(seg), topK=None, withWeight=True, allowPOS=())
+    # 先按照权重排序，再按照词排序
+    key_list = []
+    for feature, weight in key_word:
+        weight = int(weight * 20)
+        temp = []
+        for f in string_hash(feature):
+            if f == '1':
+                temp.append(weight)
+            else:
+                temp.append(-weight)
+        key_list.append(temp)
+    content_list = np.sum(np.array(key_list), axis=0)
+    # 编码读不出来
+    if len(key_list) == 0:
+        return '00'
+    hash_code = ''
+    for c in content_list:
+        if c > 0:
+            hash_code = hash_code + '1'
+        else:
+            hash_code = hash_code + '0'
+    return hash_code
 
 def max_min_normalize(x):
     """

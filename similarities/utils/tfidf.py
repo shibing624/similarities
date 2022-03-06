@@ -62,18 +62,12 @@ class TFIDF:
         self.idf_loader.set_new_path(new_abs_path)
         self.idf_freq, self.median_idf = self.idf_loader.get_idf()
 
-    def get_tfidf(self, sentences):
-        """
-        Extract keywords from sentence using TF-IDF algorithm.
-        """
-        result = []
-        for sentence in sentences:
-            words = [word.word for word in jieba.posseg.cut(sentence) if word.flag[0] not in ['u', 'x', 'w']]
-            words = [word for word in words if word.lower() not in self.stopwords or len(word.strip()) < 2]
-            word_idf = {word: self.idf_freq.get(word, self.median_idf) for word in words}
+    def get_tfidf(self, sentence):
+        words = [word.word for word in jieba.posseg.cut(sentence) if word.flag[0] not in ['u', 'x', 'w']]
+        words = [word for word in words if word.lower() not in self.stopwords or len(word.strip()) < 2]
+        word_idf = {word: self.idf_freq.get(word, self.median_idf) for word in words}
 
-            freqs = []
-            for w in list(self.idf_freq.keys()):
-                freqs.append(word_idf.get(w, 0))
-            result.append(freqs)
-        return result
+        res = []
+        for w in list(self.idf_freq.keys()):
+            res.append(word_idf.get(w, 0))
+        return res

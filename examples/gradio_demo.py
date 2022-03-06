@@ -5,7 +5,7 @@
 """
 from text2vec import Word2Vec
 import gradio as gr
-from similarities.termsim import WordEmbeddingSimilarity
+from similarities import WordEmbeddingSimilarity
 
 wv_model = Word2Vec()
 sim_model = WordEmbeddingSimilarity(wv_model)

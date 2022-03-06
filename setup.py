@@ -44,10 +44,10 @@ setup(
         "jieba>=0.39",
         "loguru",
         "transformers>=4.6.0",
-        "tqdm",
         "scikit-learn",
         "gensim>=4.0.0",
-        "pandas",
+        "text2vec",
+        "hnswlib",
     ],
     packages=find_packages(),
 )
