@@ -12,7 +12,7 @@ sim_model = WordEmbeddingSimilarity(wv_model)
 
 
 def ai_text(sentence1, sentence2):
-    score = sim_model.similarity(sentence1, sentence2).numpy()[0][0]
+    score = sim_model.similarity(sentence1, sentence2)
     print("{} \t\t {} \t\t Score: {:.4f}".format(sentence1, sentence2, score))
 
     return score

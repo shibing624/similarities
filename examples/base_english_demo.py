@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 @author:XuMing(xuming624@qq.com)
-@description: 文本语义相似度计算
+@description: This basic example loads a matching model and use it to
+compute cosine similarity for a given list of sentences.
 """
 import sys
 
