@@ -8,14 +8,15 @@
 [![Wechat Group](http://vlog.sfyc.ltd/wechat_everyday/wxgroup_logo.png?imageView2/0/w/60/h/20)](#Contact)
 
 # Similarities
-Similarities is a toolkit for similarity calculation and semantic search, supports text and image. 
+
+Similarities is a toolkit for similarity calculation and semantic search, supports text and image.
 
 similarities：相似度计算、语义匹配搜索工具包。
 
 **similarities** 实现了多种相似度计算、匹配搜索算法，支持文本、图像，python3开发，pip安装，开箱即用。
 
-
 **Guide**
+
 - [Feature](#Feature)
 - [Install](#install)
 - [Usage](#usage)
@@ -30,8 +31,8 @@ similarities：相似度计算、语义匹配搜索工具包。
 - 余弦相似（Cosine Similarity）：两向量求余弦
 - 点积（Dot Product）：两向量归一化后求内积
 - [RankBM25](similarities/literalsim.py)：BM25的变种算法，对query和文档之间的相似度打分，得到docs的rank排序
-- [SemanticSearch](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L99)：向量相似检索，使用Cosine Similarty + topk高效计算，比一对一暴力计算快一个数量级
-
+- [SemanticSearch](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L99)：向量相似检索，使用Cosine
+  Similarty + topk高效计算，比一对一暴力计算快一个数量级
 
 # Demo
 
@@ -42,6 +43,7 @@ HuggingFace Demo: https://huggingface.co/spaces/shibing624/text2vec
 ![](docs/hf.png)
 
 # Install
+
 ```
 pip3 install torch # conda install pytorch
 pip3 install -U similarities
@@ -59,13 +61,12 @@ python3 setup.py install
 
 ### 1. 文本语义相似度计算
 
-```shell
->>> from similarities import Similarity
+```python
+from similarities import Similarity
 
->>> m = Similarity("shibing624/text2vec-base-chinese")
->>> r = m.similarity('如何更换花呗绑定银行卡', '花呗更改绑定银行卡')
->>> print(f"similarity score: {r:.4f}")
-similarity score: 0.8551
+m = Similarity("shibing624/text2vec-base-chinese")
+r = m.similarity('如何更换花呗绑定银行卡', '花呗更改绑定银行卡')
+print(f"similarity score: {r:.4f}")  # similarity score: 0.8551
 ```
 
 > 余弦值`score`范围是[-1, 1]，值越大越相似。
@@ -74,8 +75,7 @@ similarity score: 0.8551
 
 一般在文档候选集中找与query最相似的文本，常用于QA场景的问句相似匹配、文本相似检索等任务。
 
-
-中文示例[examples/base_demo.py](./examples/base_demo.py)
+example: [examples/base_demo.py](./examples/base_demo.py)
 
 ```python
 import sys
@@ -115,6 +115,7 @@ for i in model.most_similar(q, topn=5):
 ```
 
 output:
+
 ```shell
 如何更换花呗绑定银行卡 vs 花呗更改绑定银行卡, score: 0.8551
 ...
@@ -139,25 +140,25 @@ query: 如何更换花呗绑定银行卡
 	 (3, '暴风雨掩埋了东北部；新泽西16英寸的降雪', 0.21666759252548218)
 	 (2, '俄罗斯警告乌克兰反对欧盟协议', 0.1450251191854477)
 ```
+
 > 余弦`score`的值范围[-1, 1]，值越大，表示该query与corpus的文本越相似。
 
 
-英文示例[examples/base_english_demo.py](./examples/base_english_demo.py)
+#### 英文语义相似度计算和匹配搜索
 
+example: [examples/base_english_demo.py](./examples/base_english_demo.py)
 
 ### 3. 快速近似语义匹配搜索
 
 支持Annoy、Hnswlib的近似语义匹配搜索，常用于百万数据集的匹配搜索任务。
 
-
-示例[examples/fast_sim_demo.py](./examples/fast_sim_demo.py)
-
+example: [examples/fast_sim_demo.py](./examples/fast_sim_demo.py)
 
 ### 4. 基于字面的文本相似度计算和匹配搜索
 
 支持同义词词林（Cilin）、知网Hownet、词向量（WordEmbedding）、Tfidf、SimHash、BM25等算法的相似度计算和字面匹配搜索，常用于文本匹配冷启动。
 
-示例[examples/literal_sim_demo.py](./examples/literal_sim_demo.py)
+example: [examples/literal_sim_demo.py](./examples/literal_sim_demo.py)
 
 ```python
 from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Similarity, \
@@ -175,6 +176,7 @@ print(m.most_similar('刘若英是演员'))
 ```
 
 output:
+
 ```shell
 如何更换花呗绑定银行卡 花呗更改绑定银行卡  sim score:  0.8203384355246909
 
@@ -185,7 +187,7 @@ output:
 
 支持[CLIP](similarities/imagesim.py)、pHash、SIFT等算法的图像相似度计算和匹配搜索。
 
-示例[examples/image_demo.py](./examples/image_demo.py)
+example: [examples/image_demo.py](./examples/image_demo.py)
 
 ```python
 import sys
@@ -206,33 +208,36 @@ print(r)
 ```
 
 output:
+
 ```shell
 0.9579
 
 [(6, 'data/image1.png', 1.0), (0, 'data/image12-like-image1.png', 0.9579654335975647), (4, 'data/image8-like-image1.png', 0.9326782822608948), ... ]
 ```
+
 ![image_sim](docs/image_sim.png)
 
 # Contact
 
-- Issue(建议)：[![GitHub issues](https://img.shields.io/github/issues/shibing624/similarities.svg)](https://github.com/shibing624/similarities/issues)
+- Issue(建议)
+  ：[![GitHub issues](https://img.shields.io/github/issues/shibing624/similarities.svg)](https://github.com/shibing624/similarities/issues)
 - 邮件我：xuming: xuming624@qq.com
-- 微信我：
-加我*微信号：xuming624, 备注：姓名-公司-NLP* 进NLP交流群。
+- 微信我： 加我*微信号：xuming624, 备注：姓名-公司-NLP* 进NLP交流群。
 
 <img src="docs/wechat.jpeg" width="200" />
-
 
 # Citation
 
 如果你在研究中使用了similarities，请按如下格式引用：
 
 APA:
+
 ```
 Xu, M. Similarities: Compute similarity score for humans (Version 0.0.4) [Computer software]. https://github.com/shibing624/similarities
 ```
 
 BibTeX:
+
 ```
 @software{Xu_Similarities_Compute_similarity,
 author = {Xu, Ming},
@@ -244,19 +249,19 @@ version = {0.0.4}
 
 # License
 
-
 授权协议为 [The Apache License 2.0](/LICENSE)，可免费用做商业用途。请在产品说明中附加similarities的链接和授权协议。
 
-
 # Contribute
+
 项目代码还很粗糙，如果大家对代码有所改进，欢迎提交回本项目，在提交之前，注意以下两点：
 
- - 在`tests`添加相应的单元测试
- - 使用`python setup.py test`来运行所有单元测试，确保所有单测都是通过的
+- 在`tests`添加相应的单元测试
+- 使用`python setup.py test`来运行所有单元测试，确保所有单测都是通过的
 
 之后即可提交PR。
 
 # Reference
+
 - [A Simple but Tough-to-Beat Baseline for Sentence Embeddings[Sanjeev Arora and Yingyu Liang and Tengyu Ma, 2017]](https://openreview.net/forum?id=SyK00v5xx)
 - [liuhuanyong/SentenceSimilarity](https://github.com/liuhuanyong/SentenceSimilarity)
 - [shibing624/text2vec](https://github.com/shibing624/text2vec)
