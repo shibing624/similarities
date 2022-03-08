@@ -41,13 +41,13 @@ setup(
     ],
     keywords='similarities,Chinese Text Similarity Calculation Tool,similarity,word2vec',
     install_requires=[
+        "sentence-transformers>=2.1.0",
         "jieba>=0.39",
         "loguru",
+        "Pillow",
         "transformers>=4.6.0",
-        "scikit-learn",
-        "gensim>=4.0.0",
-        "text2vec",
-        "hnswlib",
+        # "hnswlib",
+        # "opencv-python",
     ],
     packages=find_packages(),
 )

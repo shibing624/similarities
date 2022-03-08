@@ -3,7 +3,7 @@ text2vec
 jieba>=0.39
 loguru
 transformers>=4.6.0
-scikit-learn
-gensim>=4.0.0
+Pillow
 hnswlib
+annoy
 opencv-python

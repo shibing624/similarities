@@ -15,7 +15,6 @@ import jieba
 import jieba.analyse
 import jieba.posseg
 import numpy as np
-from text2vec import Word2Vec
 from loguru import logger
 from similarities.utils.distance import string_hash, hamming_distance, cosine_distance
 from similarities.utils.rank_bm25 import BM25Okapi
@@ -268,18 +267,22 @@ class WordEmbeddingSimilarity:
     similar sentence for a given corpus.
     """
 
-    def __init__(self, keyedvectors, corpus: List[str] = None):
+    def __init__(self, model_name_or_path="w2v-light-tencent-chinese", corpus: List[str] = None):
         """
         Init WordEmbeddingSimilarity.
-        :param keyedvectors: ~text2vec.Word2Vec
+        :param model_name_or_path: ~text2vec.Word2Vec model name or path to model file.
         :param corpus: list of str
         """
-        if isinstance(keyedvectors, Word2Vec):
-            self.keyedvectors = keyedvectors
-        elif isinstance(keyedvectors, str):
-            self.keyedvectors = Word2Vec(keyedvectors)
+        try:
+            from text2vec import Word2Vec
+        except ImportError:
+            raise ImportError("Please install text2vec package, eg. `pip install text2vec`")
+        if isinstance(model_name_or_path, str):
+            self.keyedvectors = Word2Vec(model_name_or_path)
+        elif hasattr(model_name_or_path, "encode"):
+            self.keyedvectors = model_name_or_path
         else:
-            raise ValueError("keyedvectors must be ~text2vec.Word2Vec or Word2Vec model name")
+            raise ValueError("model_name_or_path must be ~text2vec.Word2Vec or Word2Vec model name")
         self.corpus = []
         self.corpus_embeddings = []
         if corpus is not None:
@@ -311,7 +314,7 @@ class WordEmbeddingSimilarity:
             self.corpus_embeddings = corpus_embeddings
         logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
-    def _get_vector(self, text):
+    def _get_vector(self, text) -> np.ndarray:
         return self.keyedvectors.encode(text)
 
     def similarity(self, text1: str, text2: str):

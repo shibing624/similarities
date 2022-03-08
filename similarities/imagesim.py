@@ -9,7 +9,6 @@ Adjust the code to compare similarity score and search.
 import math
 from typing import List, Union
 
-import cv2
 import numpy as np
 from PIL import Image
 from loguru import logger
@@ -81,16 +80,16 @@ class ClipSimilarity:
         imgs = [self._convert_to_rgb(img) for img in imgs]
         return self.clip_model.encode(imgs, batch_size=128, convert_to_tensor=False, show_progress_bar=True)
 
-    def similarity(self, fp1: str, fp2: str):
+    def similarity(self, img_paths1: Union[str, List[str]], img_paths2: Union[str, List[str]]):
         """
         Compute similarity between two image files.
-        :param fp1: image file path 1
-        :param fp2: image file path 2
+        :param img_paths1: image file path 1
+        :param img_paths2: image file path 2
         :return: similarity score
         """
-        emb1 = self._get_vector(fp1)
-        emb2 = self._get_vector(fp2)
-        similarity_score = float(cos_sim(emb1, emb2))
+        embs1 = self._get_vector(img_paths1)
+        embs2 = self._get_vector(img_paths2)
+        similarity_score = cos_sim(embs1, embs2)
 
         return similarity_score
 
@@ -214,6 +213,10 @@ class SiftSimilarity:
     """
 
     def __init__(self, corpus: List[str] = None, nfeatures: int = 500):
+        try:
+            import cv2
+        except ImportError:
+            raise ImportError("Install cv2 to use SiftSimilarity, e.g. `pip install cv2`")
         self.corpus = []
         self.sift = cv2.SIFT_create(nfeatures=nfeatures)
         self.bf_matcher = cv2.BFMatcher()  # Brute-force matcher create method.
