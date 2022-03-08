@@ -57,7 +57,7 @@ python3 setup.py install
 
 # Usage
 
-### 1. 计算两个句子的相似度值
+### 1. 文本语义相似度计算
 
 ```shell
 >>> from similarities import Similarity
@@ -70,7 +70,7 @@ similarity score: 0.8551
 
 > 余弦值`score`范围是[-1, 1]，值越大越相似。
 
-### 2. 文档集中相似文本搜索
+### 2. 文本语义匹配搜索
 
 一般在文档候选集中找与query最相似的文本，常用于QA场景的问句相似匹配、文本相似检索等任务。
 
@@ -78,38 +78,40 @@ similarity score: 0.8551
 中文示例[examples/base_demo.py](./examples/base_demo.py)
 
 ```python
+import sys
+
+sys.path.append('..')
 from similarities import Similarity
 
-if __name__ == '__main__':
-    model = Similarity("shibing624/text2vec-base-chinese")
-    # 1.Compute cosine similarity between two sentences.
-    sentences = ['如何更换花呗绑定银行卡',
-                 '花呗更改绑定银行卡']
-    corpus = [
-        '花呗更改绑定银行卡',
-        '我什么时候开通了花呗',
-        '俄罗斯警告乌克兰反对欧盟协议',
-        '暴风雨掩埋了东北部；新泽西16英寸的降雪',
-        '中央情报局局长访问以色列叙利亚会谈',
-        '人在巴基斯坦基地的炸弹袭击中丧生',
-    ]
-    similarity_score = model.similarity(sentences[0], sentences[1])
-    print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
-    
-    # 2.Compute similarity between two list
-    similarity_scores = model.similarity(sentences, corpus)
-    print(similarity_scores.numpy())
-    for i in range(len(sentences)):
-        for j in range(len(corpus)):
-            print(f"{sentences[i]} vs {corpus[j]}, score: {similarity_scores.numpy()[i][j]:.4f}")
+# 1.Compute cosine similarity between two sentences.
+sentences = ['如何更换花呗绑定银行卡',
+             '花呗更改绑定银行卡']
+corpus = [
+    '花呗更改绑定银行卡',
+    '我什么时候开通了花呗',
+    '俄罗斯警告乌克兰反对欧盟协议',
+    '暴风雨掩埋了东北部；新泽西16英寸的降雪',
+    '中央情报局局长访问以色列叙利亚会谈',
+    '人在巴基斯坦基地的炸弹袭击中丧生',
+]
+model = Similarity("shibing624/text2vec-base-chinese")
+print(model)
+similarity_score = model.similarity(sentences[0], sentences[1])
+print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
 
-    # 3.Semantic Search
-    m = Similarity("shibing624/text2vec-base-chinese", corpus=corpus)
-    q = '如何更换花呗绑定银行卡'
-    print(m.most_similar(q, topn=5))
-    print("query:", q)
-    for i in m.most_similar(q, topn=5):
-        print('\t', i)
+# 2.Compute similarity between two list
+similarity_scores = model.similarity(sentences, corpus)
+print(similarity_scores.numpy())
+for i in range(len(sentences)):
+    for j in range(len(corpus)):
+        print(f"{sentences[i]} vs {corpus[j]}, score: {similarity_scores.numpy()[i][j]:.4f}")
+
+# 3.Semantic Search
+model.add_corpus(corpus)
+q = '如何更换花呗绑定银行卡'
+print("query:", q)
+for i in model.most_similar(q, topn=5):
+    print('\t', i)
 ```
 
 output:
@@ -143,22 +145,22 @@ query: 如何更换花呗绑定银行卡
 英文示例[examples/base_english_demo.py](./examples/base_english_demo.py)
 
 
-### 3. 快速近似匹配搜索
+### 3. 快速近似语义匹配搜索
 
-支持Annoy、Hnswlib的近似匹配搜索，常用于百万数据集的匹配搜索任务。
+支持Annoy、Hnswlib的近似语义匹配搜索，常用于百万数据集的匹配搜索任务。
 
 
 示例[examples/fast_sim_demo.py](./examples/fast_sim_demo.py)
 
 
-### 4. 基于字面的文本相似度计算
+### 4. 基于字面的文本相似度计算和匹配搜索
 
-支持同义词词林（Cilin）、知网Hownet、词向量（WordEmbedding）、Tfidf、Simhash、BM25等算法的相似度计算和匹配搜索，常用于文本匹配冷启动。
+支持同义词词林（Cilin）、知网Hownet、词向量（WordEmbedding）、Tfidf、SimHash、BM25等算法的相似度计算和字面匹配搜索，常用于文本匹配冷启动。
 
 示例[examples/literal_sim_demo.py](./examples/literal_sim_demo.py)
 
 ```python
-from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Similarity,
+from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Similarity, \
     WordEmbeddingSimilarity, CilinSimilarity, HownetSimilarity
 
 text1 = "如何更换花呗绑定银行卡"
@@ -166,7 +168,7 @@ text2 = "花呗更改绑定银行卡"
 
 m = TfidfSimilarity()
 print(text1, text2, ' sim score: ', m.similarity(text1, text2))
-print('distance:', m.distance(text1, text2))
+
 zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌', '我不是演员吗']
 m.add_corpus(zh_list)
 print(m.most_similar('刘若英是演员'))
@@ -175,10 +177,41 @@ print(m.most_similar('刘若英是演员'))
 output:
 ```shell
 如何更换花呗绑定银行卡 花呗更改绑定银行卡  sim score:  0.8203384355246909
-distance: 0.17966156447530912
 
 [(0, '刘若英是个演员', 0.9847577834309504), (3, '我不是演员吗', 0.7056381915655814), (1, '他唱歌很好听', 0.5), (2, 'women喜欢这首歌', 0.5)]
 ```
+
+### 5. 图像相似度计算和匹配搜索
+
+支持[CLIP](similarities/imagesim.py)、pHash、SIFT等算法的图像相似度计算和匹配搜索。
+
+示例[examples/image_demo.py](./examples/image_demo.py)
+
+```python
+import sys
+import glob
+
+sys.path.append('..')
+from similarities.imagesim import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
+
+image_fp1 = 'data/image1.png'
+image_fp2 = 'data/image12-like-image1.png'
+m = ClipSimilarity()
+print(m)
+print(m.similarity(image_fp1, image_fp2))
+# add corpus
+m.add_corpus(glob.glob('data/*.jpg') + glob.glob('data/*.png'))
+r = m.most_similar(image_fp1)
+print(r)
+```
+
+output:
+```shell
+0.9579
+
+[(6, 'data/image1.png', 1.0), (0, 'data/image12-like-image1.png', 0.9579654335975647), (4, 'data/image8-like-image1.png', 0.9326782822608948), ... ]
+```
+![image_sim](docs/image_sim.png)
 
 # Contact
 

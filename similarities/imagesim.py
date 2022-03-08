@@ -7,7 +7,6 @@ refer: https://colab.research.google.com/drive/1leOzG-AQw5MkzgA4qNW5fb3yc-oJ4Lo4
 Adjust the code to compare similarity score and search.
 """
 import math
-import os
 from typing import List, Union
 
 import cv2
@@ -22,7 +21,100 @@ from similarities.utils.distance import hamming_distance
 from similarities.utils.imagehash import phash, dhash, whash, average_hash
 from similarities.utils.util import cos_sim
 
-pwd_path = os.path.abspath(os.path.dirname(__file__))
+
+class ClipSimilarity:
+    """
+    Compute CLIP similarity between two images and retrieves most
+    similar image for a given image corpus.
+
+    CLIP: https://github.com/openai/CLIP.git
+    """
+
+    def __init__(self, corpus: List[str] = None, model_name_or_path: str = 'clip-ViT-B-32'):
+        self.corpus = []
+        self.clip_model = SentenceTransformer(model_name_or_path)  # load the CLIP model
+        self.corpus_embeddings = []
+        if corpus is not None:
+            self.add_corpus(corpus)
+
+    def __len__(self):
+        """Get length of corpus."""
+        return len(self.corpus)
+
+    def __str__(self):
+        base = f"Similarity: {self.__class__.__name__}, matching_model: CLIP"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
+
+    def add_corpus(self, corpus: List[str]):
+        """
+        Extend the corpus with new documents.
+
+        Parameters
+        ----------
+        corpus : list of str
+        """
+        self.corpus += corpus
+        corpus_embeddings = self._get_vector(corpus).tolist()
+        if self.corpus_embeddings:
+            self.corpus_embeddings += corpus_embeddings
+        else:
+            self.corpus_embeddings = corpus_embeddings
+        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
+
+    def _convert_to_rgb(self, img):
+        """Convert image to RGB mode."""
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        return img
+
+    def _get_vector(self, img_paths: Union[str, List[str]]):
+        """
+        Returns the embeddings for a batch of images.
+        :param img_paths:
+        :return:
+        """
+        if isinstance(img_paths, str):
+            img_paths = [img_paths]
+        imgs = [Image.open(filepath) for filepath in img_paths]
+        imgs = [self._convert_to_rgb(img) for img in imgs]
+        return self.clip_model.encode(imgs, batch_size=128, convert_to_tensor=False, show_progress_bar=True)
+
+    def similarity(self, fp1: str, fp2: str):
+        """
+        Compute similarity between two image files.
+        :param fp1: image file path 1
+        :param fp2: image file path 2
+        :return: similarity score
+        """
+        emb1 = self._get_vector(fp1)
+        emb2 = self._get_vector(fp2)
+        similarity_score = float(cos_sim(emb1, emb2))
+
+        return similarity_score
+
+    def distance(self, fp1: str, fp2: str):
+        """Compute distance between two image files."""
+        return 1 - self.similarity(fp1, fp2)
+
+    def most_similar(self, query_fp: str, topn: int = 10):
+        """
+        Find the topn most similar images to the query against the corpus.
+        :param query_fp: str
+        :param topn: int
+        :return: list of tuples (id, image_path, similarity)
+        """
+        result = []
+        q_emb = self._get_vector(query_fp)
+
+        # Computes the cosine-similarity between the query embedding and all image embeddings.
+        hits = semantic_search(q_emb, np.array(self.corpus_embeddings, dtype=np.float32), top_k=topn)
+        hits = hits[0]  # Get the first query result when query is string
+
+        for hit in hits[:topn]:
+            result.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
+        return result
 
 
 class ImageHashSimilarity:
@@ -239,100 +331,4 @@ class SiftSimilarity:
             score = self._sim_score(q_desc, doc_desc)
             result.append((corpus_id, doc, score))
         result.sort(key=lambda x: x[2], reverse=True)
-        return result[:topn]
-
-
-class ClipSimilarity:
-    """
-    Compute CLIP similarity between two images and retrieves most
-    similar image for a given image corpus.
-
-    CLIP: https://github.com/openai/CLIP.git
-    """
-
-    def __init__(self, corpus: List[str] = None, model_name_or_path: str = 'clip-ViT-B-32'):
-        self.corpus = []
-        self.clip_model = SentenceTransformer(model_name_or_path)  # load the CLIP model
-        self.corpus_embeddings = []
-        if corpus is not None:
-            self.add_corpus(corpus)
-
-    def __len__(self):
-        """Get length of corpus."""
-        return len(self.corpus)
-
-    def __str__(self):
-        base = f"Similarity: {self.__class__.__name__}, matching_model: CLIP"
-        if self.corpus:
-            base += f", corpus size: {len(self.corpus)}"
-        return base
-
-    def add_corpus(self, corpus: List[str]):
-        """
-        Extend the corpus with new documents.
-
-        Parameters
-        ----------
-        corpus : list of str
-        """
-        self.corpus += corpus
-        corpus_embeddings = self._get_vector(corpus).tolist()
-        if self.corpus_embeddings:
-            self.corpus_embeddings += corpus_embeddings
-        else:
-            self.corpus_embeddings = corpus_embeddings
-        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
-
-    def _convert_to_rgb(self, img):
-        """Convert image to RGB mode."""
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        return img
-
-    def _get_vector(self, img_paths: Union[str, List[str]]):
-        """
-        Returns the embeddings for a batch of images.
-        :param img_paths:
-        :return:
-        """
-        if isinstance(img_paths, str):
-            img_paths = [img_paths]
-        imgs = [Image.open(filepath) for filepath in img_paths]
-        imgs = [self._convert_to_rgb(img) for img in imgs]
-        return self.clip_model.encode(imgs, batch_size=128, convert_to_tensor=False, show_progress_bar=True)
-
-    def similarity(self, fp1: str, fp2: str):
-        """
-        Compute similarity between two image files.
-        :param fp1: image file path 1
-        :param fp2: image file path 2
-        :return: similarity score
-        """
-        emb1 = self._get_vector(fp1)
-        emb2 = self._get_vector(fp2)
-        similarity_score = float(cos_sim(emb1, emb2))
-
-        return similarity_score
-
-    def distance(self, fp1: str, fp2: str):
-        """Compute distance between two image files."""
-        return 1 - self.similarity(fp1, fp2)
-
-    def most_similar(self, query_fp: str, topn: int = 10):
-        """
-        Find the topn most similar images to the query against the corpus.
-        :param query_fp: str
-        :param topn: int
-        :return: list of tuples (id, image_path, similarity)
-        """
-        result = []
-        q_emb = self._get_vector(query_fp)
-
-        # Computes the cosine-similarity between the query embedding and all image embeddings.
-        hits = semantic_search(q_emb, np.array(self.corpus_embeddings, dtype=np.float32), top_k=topn)
-        hits = hits[0]  # Get the first query result when query is string
-
-        for hit in hits[:topn]:
-            result.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
-
         return result[:topn]

@@ -111,5 +111,4 @@ class Similarity:
 
         for hit in hits[0:topn]:
             result.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
-
         return result

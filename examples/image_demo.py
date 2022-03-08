@@ -14,8 +14,6 @@ def phash_demo(image_fp1, image_fp2):
     m = ImageHashSimilarity(hash_function='phash')
     print(m)
     print(m.similarity(image_fp1, image_fp2))
-    m.most_similar(image_fp1)
-    # no corpus
     m.add_corpus(glob.glob('data/*.jpg') + glob.glob('data/*.png'))
     r = m.most_similar(image_fp1)
     print(r)
@@ -23,8 +21,6 @@ def phash_demo(image_fp1, image_fp2):
     m = ImageHashSimilarity(hash_function='average_hash')
     print(m)
     print(m.similarity(image_fp1, image_fp2))
-    m.most_similar(image_fp1)
-    # no corpus
     m.add_corpus(glob.glob('data/*.jpg') + glob.glob('data/*.png'))
     r = m.most_similar(image_fp1)
     print(r)
@@ -35,7 +31,7 @@ def sift_demo(image_fp1, image_fp2):
     print(m)
     print(m.similarity(image_fp1, image_fp2))
     m.most_similar(image_fp1)
-    # no corpus
+    # add corpus
     m.add_corpus(glob.glob('data/*.jpg'))
     m.add_corpus(glob.glob('data/*.png'))
     r = m.most_similar(image_fp1)
@@ -46,8 +42,7 @@ def clip_demo(image_fp1, image_fp2):
     m = ClipSimilarity()
     print(m)
     print(m.similarity(image_fp1, image_fp2))
-    m.most_similar(image_fp1)
-    # no corpus
+    # add corpus
     m.add_corpus(glob.glob('data/*.jpg') + glob.glob('data/*.png'))
     r = m.most_similar(image_fp1)
     print(r)
@@ -59,4 +54,4 @@ if __name__ == "__main__":
 
     phash_demo(image_fp1, image_fp2)
     sift_demo(image_fp1, image_fp2)
-    clip_demo(image_fp1, image_fp2)
+    clip_demo(image_fp1, image_fp2)  # the best result

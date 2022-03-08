@@ -20,8 +20,6 @@ def hnswlib():
 
     m = HnswlibSimilarity(sm, embedding_size=384, corpus=list_of_docs * 10)
     print(m)
-    v = m._get_vector("This is test1")
-    print(v[:10], v.shape)
     print(m.similarity("This is a test1", "that is a test5"))
     print(m.distance("This is a test1", "that is a test5"))
     print(m.most_similar("This is a test4"))
@@ -44,8 +42,6 @@ def annoy():
 
     m = AnnoySimilarity(sm, embedding_size=384, corpus=list_of_docs * 10)
     print(m)
-    v = m._get_vector("This is test1")
-    print(v[:10], v.shape)
     print(m.similarity("This is a test1", "that is a test5"))
     print(m.distance("This is a test1", "that is a test5"))
     print(m.most_similar("This is a test4"))

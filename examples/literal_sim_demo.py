@@ -20,6 +20,7 @@ def main():
     text1 = '刘若英是个演员'
     text2 = '他唱歌很好听'
     m = SimHashSimilarity()
+    print(m)
     print(m.similarity(text1, text2))
     print(m.distance(text1, text2))
     print(m.most_similar('刘若英是演员'))
@@ -30,6 +31,7 @@ def main():
     text1 = "如何更换花呗绑定银行卡"
     text2 = "花呗更改绑定银行卡"
     m = TfidfSimilarity()
+    print(m)
     print(text1, text2, ' sim score: ', m.similarity(text1, text2))
     print('distance:', m.distance(text1, text2))
     zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌', '我不是演员吗']
@@ -37,11 +39,13 @@ def main():
     print(m.most_similar('刘若英是演员'))
 
     m = BM25Similarity()
+    print(m)
     zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌', '我不是演员吗']
     m.add_corpus(zh_list)
     print(m.most_similar('刘若英是演员'))
 
     wm = Word2Vec()
+    print(m)
     list_of_corpus = ["This is a test1", "This is a test2", "This is a test3"]
     list_of_corpus2 = ["that is test4", "that is a test5", "that is a test6"]
     m = WordEmbeddingSimilarity(wm, list_of_corpus)
@@ -55,6 +59,7 @@ def main():
     text1 = '周杰伦是一个歌手'
     text2 = '刘若英是个演员'
     m = CilinSimilarity()
+    print(m)
     print(m.similarity(text1, text2))
     print(m.distance(text1, text2))
     zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
@@ -62,6 +67,7 @@ def main():
     print(m.most_similar('刘若英是演员'))
 
     m = HownetSimilarity()
+    print(m)
     print(m.similarity(text1, text2))
     print(m.distance(text1, text2))
     zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
