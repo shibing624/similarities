@@ -10,22 +10,21 @@ Adjust the gensim similarities Index to compute sentence similarities.
 
 import os
 from typing import List, Union
-
+from tqdm import tqdm
 import jieba
 import jieba.analyse
 import jieba.posseg
 import numpy as np
 from text2vec import Word2Vec
 from loguru import logger
-from similarities.utils.distance import cosine_distance
-from similarities.utils.distance import sim_hash, hamming_distance
+from similarities.utils.distance import string_hash, hamming_distance, cosine_distance
 from similarities.utils.rank_bm25 import BM25Okapi
 from similarities.utils.tfidf import TFIDF
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 
 
-class SimhashSimilarity:
+class SimHashSimilarity:
     """
     Compute SimHash similarity between two sentences and retrieves most
     similar sentence for a given corpus.
@@ -33,7 +32,7 @@ class SimhashSimilarity:
 
     def __init__(self, corpus: List[str] = None):
         self.corpus = []
-        self.corpus_embeddings = np.array([])
+        self.corpus_embeddings = []
         if corpus is not None:
             self.add_corpus(corpus)
 
@@ -57,14 +56,12 @@ class SimhashSimilarity:
         """
         self.corpus += corpus
         corpus_embeddings = []
-        for sentence in corpus:
+        for sentence in tqdm(corpus, desc="Computing corpus SimHash"):
             corpus_embeddings.append(self.simhash(sentence))
-            if len(corpus_embeddings) % 1000 == 0:
-                logger.debug(f"Progress, add corpus size: {len(corpus_embeddings)}")
-        if self.corpus_embeddings.size > 0:
-            self.corpus_embeddings = np.vstack((self.corpus_embeddings, corpus_embeddings))
+        if self.corpus_embeddings:
+            self.corpus_embeddings += corpus_embeddings
         else:
-            self.corpus_embeddings = np.array(corpus_embeddings)
+            self.corpus_embeddings = corpus_embeddings
         logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
     def simhash(self, text: str):
@@ -73,11 +70,38 @@ class SimhashSimilarity:
         :param text: str
         :return: hash code
         """
-        return sim_hash(text)
+        seg = jieba.cut(text)
+        key_word = jieba.analyse.extract_tags('|'.join(seg), topK=None, withWeight=True, allowPOS=())
+        # 先按照权重排序，再按照词排序
+        key_list = []
+        for feature, weight in key_word:
+            weight = int(weight * 20)
+            temp = []
+            for f in string_hash(feature):
+                if f == '1':
+                    temp.append(weight)
+                else:
+                    temp.append(-weight)
+            key_list.append(temp)
+        content_list = np.sum(np.array(key_list), axis=0)
+        # 编码读不出来
+        if len(key_list) == 0:
+            return '00'
+        hash_code = ''
+        for c in content_list:
+            if c > 0:
+                hash_code = hash_code + '1'
+            else:
+                hash_code = hash_code + '0'
+        return hash_code
 
-    def _sim_score(self, v1, v2):
-        """Compute hamming similarity between two embeddings."""
-        return (100 - hamming_distance(v1, v2) * 100 / 64) / 100
+    def _sim_score(self, seq1, seq2):
+        """Convert hamming distance to similarity score."""
+        # 将距离转化为相似度
+        score = 0.0
+        if len(seq1) > 2 and len(seq2) > 2:
+            score = 1.0 - hamming_distance(seq1, seq2) / len(seq1)
+        return score
 
     def similarity(self, text1: str, text2: str):
         """
@@ -86,9 +110,9 @@ class SimhashSimilarity:
         :param text2:
         :return:
         """
-        v1 = self.simhash(text1)
-        v2 = self.simhash(text2)
-        similarity_score = self._sim_score(v1, v2)
+        seq1 = self.simhash(text1)
+        seq2 = self.simhash(text2)
+        similarity_score = self._sim_score(seq1, seq2)
 
         return similarity_score
 
@@ -121,7 +145,7 @@ class TfidfSimilarity:
     def __init__(self, corpus: List[str] = None):
         super().__init__()
         self.corpus = []
-        self.corpus_embeddings = np.array([])
+        self.corpus_embeddings = []
         self.tfidf = TFIDF()
         if corpus is not None:
             self.add_corpus(corpus)
@@ -146,14 +170,12 @@ class TfidfSimilarity:
         """
         self.corpus += corpus
         corpus_embeddings = []
-        for sentence in corpus:
+        for sentence in tqdm(corpus, desc="Computing corpus TFIDF"):
             corpus_embeddings.append(self.tfidf.get_tfidf(sentence))
-            if len(corpus_embeddings) % 1000 == 0:
-                logger.debug(f"Progress, add corpus size: {len(corpus_embeddings)}")
-        if self.corpus_embeddings.size > 0:
-            self.corpus_embeddings = np.vstack((self.corpus_embeddings, corpus_embeddings))
+        if self.corpus_embeddings:
+            self.corpus_embeddings += corpus_embeddings
         else:
-            self.corpus_embeddings = np.array(corpus_embeddings)
+            self.corpus_embeddings = corpus_embeddings
         logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
     def similarity(self, text1: str, text2: str):
@@ -217,7 +239,7 @@ class BM25Similarity:
         self.bm25 = BM25Okapi(corpus_seg)
         logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
-    def similarity(self, text1, text2):
+    def _similarity(self, text1, text2):
         """
         Compute similarity score between two sentences.
         :param text1:
@@ -226,7 +248,7 @@ class BM25Similarity:
         """
         raise NotImplementedError()
 
-    def distance(self, text1, text2):
+    def _distance(self, text1, text2):
         """Compute distance between two sentences."""
         raise NotImplementedError()
 
@@ -259,7 +281,7 @@ class WordEmbeddingSimilarity:
         else:
             raise ValueError("keyedvectors must be ~text2vec.Word2Vec or Word2Vec model name")
         self.corpus = []
-        self.corpus_embeddings = np.array([])
+        self.corpus_embeddings = []
         if corpus is not None:
             self.add_corpus(corpus)
 
@@ -282,20 +304,20 @@ class WordEmbeddingSimilarity:
         corpus : list of str
         """
         self.corpus += corpus
-        corpus_embeddings = self.get_vector(corpus)
-        if self.corpus_embeddings.size > 0:
-            self.corpus_embeddings = np.vstack((self.corpus_embeddings, corpus_embeddings))
+        corpus_embeddings = self._get_vector(corpus).tolist()
+        if self.corpus_embeddings:
+            self.corpus_embeddings += corpus_embeddings
         else:
             self.corpus_embeddings = corpus_embeddings
         logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
-    def get_vector(self, text):
+    def _get_vector(self, text):
         return self.keyedvectors.encode(text)
 
     def similarity(self, text1: str, text2: str):
         """Compute cosine similarity between two texts."""
-        v1 = self.get_vector(text1)
-        v2 = self.get_vector(text2)
+        v1 = self._get_vector(text1)
+        v2 = self._get_vector(text2)
         return cosine_distance(v1, v2)
 
     def distance(self, text1: str, text2: str):
@@ -310,7 +332,7 @@ class WordEmbeddingSimilarity:
         :return:
         """
         result = []
-        query_emb = self.get_vector(query)
+        query_emb = self._get_vector(query)
         for (corpus_id, doc), doc_emb in zip(enumerate(self.corpus), self.corpus_embeddings):
             score = cosine_distance(query_emb, doc_emb, normalize=True)
             result.append((corpus_id, doc, score))

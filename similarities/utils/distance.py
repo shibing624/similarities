@@ -21,14 +21,14 @@ def try_divide(x, y, val=0.0):
 
 def cosine_distance(v1, v2, normalize=False):
     """
-    余弦距离
-    normalize: True, 余弦值的范围是 [-1,+1] ，归一化到 [0,1]
+    Compute the cosine distance between two vectors.
+    normalize: False is [-1, +1], True is [0, 1]
     return cos score
     """
     if isinstance(v1, list):
-        v1 = np.array(v1)
+        v1 = np.array(v1, dtype=np.float32)
     if isinstance(v2, list):
-        v2 = np.array(v2)
+        v2 = np.array(v2, dtype=np.float32)
     up = np.dot(v1, v2)
     down = np.linalg.norm(v1) * np.linalg.norm(v2)
     score = try_divide(up, down)
@@ -37,9 +37,29 @@ def cosine_distance(v1, v2, normalize=False):
     return score
 
 
-def hamming_distance(v1, v2):  # 海明距离
-    n = int(v1, 2) ^ int(v2, 2)
-    return bin(n & 0xffffffff).count('1')
+def hamming_distance(seq1, seq2, normalize=False):
+    """Compute the Hamming distance between the two sequences `seq1` and `seq2`.
+    The Hamming distance is the number of differing items in two ordered
+    sequences of the same length. If the sequences submitted do not have the
+    same length, an error will be raised.
+
+    If `normalized` is `False`, the return value will be an integer
+    between 0 and the length of the sequences provided, edge values included;
+    otherwise, it will be a float between 0 and 1 included, where 0 means
+    equal, and 1 totally different. Normalized hamming distance is computed as:
+
+        0.0                         if len(seq1) == 0
+        hamming_dist / len(seq1)    otherwise
+    """
+    L = len(seq1)
+    if L != len(seq2):
+        raise ValueError("expected two strings of the same length")
+    if L == 0:
+        return 0.0 if normalize else 0  # equal
+    dist = sum(c1 != c2 for c1, c2 in zip(seq1, seq2))
+    if normalize:
+        return dist / float(L)
+    return dist
 
 
 def euclidean_distance(v1, v2, normalize=False):  # 欧氏距离
@@ -158,33 +178,6 @@ def string_hash(source):
 
         return str(x)
 
-def sim_hash(text):
-    import jieba
-    import jieba.analyse
-    seg = jieba.cut(text)
-    key_word = jieba.analyse.extract_tags('|'.join(seg), topK=None, withWeight=True, allowPOS=())
-    # 先按照权重排序，再按照词排序
-    key_list = []
-    for feature, weight in key_word:
-        weight = int(weight * 20)
-        temp = []
-        for f in string_hash(feature):
-            if f == '1':
-                temp.append(weight)
-            else:
-                temp.append(-weight)
-        key_list.append(temp)
-    content_list = np.sum(np.array(key_list), axis=0)
-    # 编码读不出来
-    if len(key_list) == 0:
-        return '00'
-    hash_code = ''
-    for c in content_list:
-        if c > 0:
-            hash_code = hash_code + '1'
-        else:
-            hash_code = hash_code + '0'
-    return hash_code
 
 def max_min_normalize(x):
     """

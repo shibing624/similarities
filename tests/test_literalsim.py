@@ -10,17 +10,70 @@ import unittest
 
 sys.path.append('..')
 
-from similarities.literalsim import SimhashSimilarity, TfidfSimilarity, BM25Similarity, WordEmbeddingSimilarity, \
+from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Similarity, WordEmbeddingSimilarity, \
     CilinSimilarity, HownetSimilarity
 from text2vec import Word2Vec
 
+from similarities.utils.distance import string_hash, hamming_distance, cosine_distance
+
 
 class LiteralCase(unittest.TestCase):
+    def test_hamming_distance(self):
+        text1 = '刘若英是个演员'
+        text2 = '他唱歌很好听'
+        m = SimHashSimilarity()
+        seq1 = m.simhash(text1)
+        seq2 = m.simhash(text2)
+        print(seq1)
+        print(seq2)
+        r = 1.0 - hamming_distance(seq1, seq2) / 64
+        print(hamming_distance(seq1, seq2))
+        print(r)
+        print(m.similarity(text1, text2))
+
+        text1 = '刘若英是个演员'
+        text2 = '他'
+        m = SimHashSimilarity()
+        seq1 = m.simhash(text1)
+        seq2 = m.simhash(text2)
+        print(seq1)
+        print(seq2)
+        print(m.similarity(text1, text2))
+
+        text1 = '刘若'
+        text2 = '他'
+        m = SimHashSimilarity()
+        seq1 = m.simhash(text1)
+        seq2 = m.simhash(text2)
+        print(seq1)
+        print(seq2)
+        print(m.similarity(text1, text2))
+
+        text1 = '刘若'
+        text2 = '他他唱歌很好听他唱歌很好听他唱歌很好听他唱歌很好听他唱歌很好听他唱歌很好听,他唱歌很好听?他唱歌很好听？他唱歌很好听。。'
+        m = SimHashSimilarity()
+        seq1 = m.simhash(text1)
+        seq2 = m.simhash(text2)
+        print(seq1)
+        print(seq2)
+        print(m.similarity(text1, text2))
+
+        text1 = '刘若 他唱歌很好听他唱歌很好听他唱歌很好听他唱歌很好听他唱歌很好听他唱歌很好听,他唱歌很好听?他唱歌很好听？他唱歌很好'
+        text2 = '他他唱歌很好听他唱歌很好听他唱歌很好听他唱歌很好听他唱歌很好听他唱歌很好听,他唱歌很好听?他唱歌很好听？他唱歌很好听。。'
+        m = SimHashSimilarity()
+        seq1 = m.simhash(text1)
+        seq2 = m.simhash(text2)
+        print(seq1)
+        print(seq2)
+        s = m.similarity(text1, text2)
+        print(s)
+        self.assertTrue(s > 0)
+
     def test_simhash(self):
         """test_simhash"""
         text1 = '刘若英是个演员'
         text2 = '他唱歌很好听'
-        m = SimhashSimilarity()
+        m = SimHashSimilarity()
         print(m.similarity(text1, text2))
         print(m.distance(text1, text2))
         print(m.most_similar('刘若英是演员'))
@@ -29,7 +82,6 @@ class LiteralCase(unittest.TestCase):
         m.add_corpus(zh_list)
         r = m.most_similar('刘若英是演员', topn=2)
         print(r)
-        self.assertAlmostEqual(m.similarity(text1, text2), 0.734375, places=4)
         self.assertEqual(len(r), 2)
 
     def test_tfidf(self):
@@ -65,8 +117,8 @@ class LiteralCase(unittest.TestCase):
         m = WordEmbeddingSimilarity(wm, list_of_corpus)
         print(m.similarity(text1, text2))
         print(m.distance(text1, text2))
-        m.add_corpus(list_of_corpus2+zh_list)
-        v = m.get_vector("This is a test1")
+        m.add_corpus(list_of_corpus2 + zh_list)
+        v = m._get_vector("This is a test1")
         print(v[:10], v.shape)
         print(m.similarity("This is a test1", "that is a test5"))
         print(m.distance("This is a test1", "that is a test5"))

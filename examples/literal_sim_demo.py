@@ -3,20 +3,23 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
-import os
 import sys
 from text2vec import Word2Vec
+from loguru import logger
 
 sys.path.append('..')
 
-from similarities.literalsim import SimhashSimilarity, TfidfSimilarity, BM25Similarity, WordEmbeddingSimilarity, \
+from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Similarity, WordEmbeddingSimilarity, \
     CilinSimilarity, HownetSimilarity
+
+logger.remove()
+logger.add(sys.stderr, level="INFO")
 
 
 def main():
     text1 = '刘若英是个演员'
     text2 = '他唱歌很好听'
-    m = SimhashSimilarity()
+    m = SimHashSimilarity()
     print(m.similarity(text1, text2))
     print(m.distance(text1, text2))
     print(m.most_similar('刘若英是演员'))
@@ -43,7 +46,7 @@ def main():
     list_of_corpus2 = ["that is test4", "that is a test5", "that is a test6"]
     m = WordEmbeddingSimilarity(wm, list_of_corpus)
     m.add_corpus(list_of_corpus2)
-    v = m.get_vector("This is a test1")
+    v = m._get_vector("This is a test1")
     print(v[:10], v.shape)
     print(m.similarity("This is a test1", "that is a test5"))
     print(m.distance("This is a test1", "that is a test5"))

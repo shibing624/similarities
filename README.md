@@ -8,11 +8,11 @@
 [![Wechat Group](http://vlog.sfyc.ltd/wechat_everyday/wxgroup_logo.png?imageView2/0/w/60/h/20)](#Contact)
 
 # Similarities
-Similarities is a toolkit for similarity calculation and semantic search based on matching model. 
+Similarities is a toolkit for similarity calculation and semantic search, supports text and image. 
 
 similarities：相似度计算、语义匹配搜索工具包。
 
-**similarities**基于多种字面、语义匹配模型，实现了各模型的相似度计算、匹配搜索功能，python3开发，pip安装，开箱即用。
+**similarities** 实现了多种相似度计算、匹配搜索算法，支持文本、图像，python3开发，pip安装，开箱即用。
 
 
 **Guide**
@@ -29,7 +29,6 @@ similarities：相似度计算、语义匹配搜索工具包。
 
 - 余弦相似（Cosine Similarity）：两向量求余弦
 - 点积（Dot Product）：两向量归一化后求内积
-- 词移距离（Word Mover’s Distance）：词移距离使用两文本间的词向量，测量其中一文本中的单词在语义空间中移动到另一文本单词所需要的最短距离
 - [RankBM25](similarities/literalsim.py)：BM25的变种算法，对query和文档之间的相似度打分，得到docs的rank排序
 - [SemanticSearch](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L99)：向量相似检索，使用Cosine Similarty + topk高效计算，比一对一暴力计算快一个数量级
 
@@ -61,18 +60,15 @@ python3 setup.py install
 ### 1. 计算两个句子的相似度值
 
 ```shell
-from similarities import Similarity
-m = Similarity("shibing624/text2vec-base-chinese")
-r = m.similarity('如何更换花呗绑定银行卡', '花呗更改绑定银行卡')
-print(f"{r:.4f}")
+>>> from similarities import Similarity
+
+>>> m = Similarity("shibing624/text2vec-base-chinese")
+>>> r = m.similarity('如何更换花呗绑定银行卡', '花呗更改绑定银行卡')
+>>> print(f"similarity score: {r:.4f}")
+similarity score: 0.8551
 ```
 
-output:
-```shell
-0.8551
-```
-
-> 句子余弦相似度值`score`范围是[-1, 1]，值越大越相似。
+> 余弦值`score`范围是[-1, 1]，值越大越相似。
 
 ### 2. 文档集中相似文本搜索
 
@@ -141,7 +137,7 @@ query: 如何更换花呗绑定银行卡
 	 (3, '暴风雨掩埋了东北部；新泽西16英寸的降雪', 0.21666759252548218)
 	 (2, '俄罗斯警告乌克兰反对欧盟协议', 0.1450251191854477)
 ```
-> `Score`的值范围[-1, 1]，值越大，表示该query与corpus的文本越相似。
+> 余弦`score`的值范围[-1, 1]，值越大，表示该query与corpus的文本越相似。
 
 
 英文示例[examples/base_english_demo.py](./examples/base_english_demo.py)
@@ -162,7 +158,7 @@ query: 如何更换花呗绑定银行卡
 示例[examples/literal_sim_demo.py](./examples/literal_sim_demo.py)
 
 ```python
-from similarities.literalsim import SimhashSimilarity, TfidfSimilarity, BM25Similarity, \
+from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Similarity,
     WordEmbeddingSimilarity, CilinSimilarity, HownetSimilarity
 
 text1 = "如何更换花呗绑定银行卡"
@@ -231,3 +227,5 @@ version = {0.0.4}
 - [A Simple but Tough-to-Beat Baseline for Sentence Embeddings[Sanjeev Arora and Yingyu Liang and Tengyu Ma, 2017]](https://openreview.net/forum?id=SyK00v5xx)
 - [liuhuanyong/SentenceSimilarity](https://github.com/liuhuanyong/SentenceSimilarity)
 - [shibing624/text2vec](https://github.com/shibing624/text2vec)
+- [qwertyforce/image_search](https://github.com/qwertyforce/image_search)
+- [ImageHash - Official Github repository](https://github.com/JohannesBuchner/imagehash)
