@@ -23,9 +23,12 @@ class ImageSimCase(unittest.TestCase):
     def test_clip(self):
         m = ClipSimilarity(glob.glob(f'{image_dir}/*.jpg'))
         print(m)
-        print(m.similarity(image_fp1, image_fp2))
+        s = m.similarity(image_fp1, image_fp2)
+        print(s)
+        self.assertTrue(s > 0.5)
         r = m.most_similar(image_fp1)
-        self.assertTrue(len(r) == 0)
+        print(r)
+        self.assertTrue(not r[0])
         # no corpus
         m.add_corpus(glob.glob(f'{image_dir}/*.jpg'))
         m.add_corpus(glob.glob(f'{image_dir}/*.png'))
@@ -39,7 +42,8 @@ class ImageSimCase(unittest.TestCase):
         print(m)
         print(m.similarity(image_fp1, image_fp2))
         r = m.most_similar(image_fp1)
-        self.assertTrue(len(r) == 0)
+        print(r)
+        self.assertTrue(not r[0])
         # no corpus
         m.add_corpus(glob.glob(f'{image_dir}/*.jpg'))
         m.add_corpus(glob.glob(f'{image_dir}/*.png'))
@@ -76,7 +80,7 @@ class ImageSimCase(unittest.TestCase):
 
         s = m.similarity(image_fp1, image_fp3)
         print(s)
-        self.assertTrue(s > 0)
+        self.assertTrue(s[0] > 0)
 
 
 if __name__ == '__main__':

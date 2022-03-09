@@ -6,6 +6,7 @@
 from difflib import SequenceMatcher
 
 import numpy as np
+from similarities.utils.util import cos_sim
 
 zero_bit = 1e-9
 
@@ -19,22 +20,12 @@ def try_divide(x, y, val=0.0):
     return val
 
 
-def cosine_distance(v1, v2, normalize=False):
+def cosine_distance(v1, v2):
     """
     Compute the cosine distance between two vectors.
-    normalize: False is [-1, +1], True is [0, 1]
     return cos score
     """
-    if isinstance(v1, list):
-        v1 = np.array(v1, dtype=np.float32)
-    if isinstance(v2, list):
-        v2 = np.array(v2, dtype=np.float32)
-    up = np.dot(v1, v2)
-    down = np.linalg.norm(v1) * np.linalg.norm(v2)
-    score = try_divide(up, down)
-    if normalize:
-        score = 0.5 + 0.5 * score
-    return score
+    return cos_sim(v1, v2)
 
 
 def hamming_distance(seq1, seq2, normalize=False):

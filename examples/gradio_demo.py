@@ -3,12 +3,10 @@
 @author:XuMing(xuming624@qq.com)
 @description: pip install gradio
 """
-from text2vec import Word2Vec
 import gradio as gr
-from similarities import WordEmbeddingSimilarity
+from similarities import Similarity
 
-wv_model = Word2Vec()
-sim_model = WordEmbeddingSimilarity(wv_model)
+sim_model = Similarity()
 
 
 def ai_text(sentence1, sentence2):

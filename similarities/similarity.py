@@ -8,17 +8,74 @@ Compute similarity:
 2. Retrieves most similar sentence of a query against a corpus of documents.
 """
 
-from typing import List, Union
+from typing import List, Union, Tuple
 
+import os
 import numpy as np
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 from similarities.utils.util import cos_sim, semantic_search, dot_score
 
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+os.environ["TOKENIZERS_PARALLELISM"] = "TRUE"
 
-class Similarity:
+
+class SimilarityABC:
     """
-    Compute similarity:
+    Interface for similarity compute and search.
+
+    In all instances, there is a corpus against which we want to perform the similarity search.
+    For each similarity search, the input is a document or a corpus, and the output are the similarities
+    to individual corpus documents.
+    """
+
+    # def __init__(self, corpus: List[str] = None):
+    #     """
+    #
+    #     Parameters
+    #     ----------
+    #     corpus : list of str
+    #         Corpus of documents.
+    #     """
+    #     raise NotImplementedError("cannot instantiate Abstract Base Class")
+
+    def add_corpus(self, corpus: List[str]):
+        """
+        Extend the corpus with new documents.
+
+        Parameters
+        ----------
+        corpus : list of str
+        """
+        raise NotImplementedError("cannot instantiate Abstract Base Class")
+
+    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+        """
+        Compute similarity between two texts.
+        :param text1: list of str or str
+        :param text2: list of str or str
+        :param score_function: function to compute similarity, default cos_sim
+        :return: similarity score, torch.Tensor, Matrix with res[i][j] = cos_sim(a[i], b[j])
+        """
+        raise NotImplementedError("cannot instantiate Abstract Base Class")
+
+    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+        """Compute cosine distance between two texts."""
+        raise NotImplementedError("cannot instantiate Abstract Base Class")
+
+    def most_similar(self, queries: Union[str, List[str]], topn: int = 10):
+        """
+        Find the topn most similar texts to the query against the corpus.
+        :param queries: str
+        :param topn: int
+        :return: list of list of tuples
+        """
+        raise NotImplementedError("cannot instantiate Abstract Base Class")
+
+
+class Similarity(SimilarityABC):
+    """
+    Bert similarity:
     1. Compute the similarity between two sentences
     2. Retrieves most similar sentence of a query against a corpus of documents.
 
@@ -91,24 +148,30 @@ class Similarity:
         score_function = self.score_functions[score_function]
         text_emb1 = self._get_vector(text1)
         text_emb2 = self._get_vector(text2)
+
         return score_function(text_emb1, text_emb2)
 
     def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
         """Compute cosine distance between two texts."""
         return 1 - self.similarity(text1, text2)
 
-    def most_similar(self, query: str, topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
         """
-        Find the topn most similar texts to the query against the corpus.
-        :param query: str
+        Find the topn most similar texts to the queries against the corpus.
+        :param queries: str or list of str
         :param topn: int
-        :return:
+        :return: list of each query result tuples (corpus_id, corpus_text, similarity_score)
         """
         result = []
-        query_embeddings = self._get_vector(query)
-        hits = semantic_search(query_embeddings, np.array(self.corpus_embeddings, dtype=np.float32), top_k=topn)
-        hits = hits[0]  # Get the first query result when query is string
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+        queries_embeddings = self._get_vector(queries)
+        all_hits = semantic_search(queries_embeddings, np.array(self.corpus_embeddings, dtype=np.float32), top_k=topn)
+        # logger.debug(f"batch_hits: {batch_hits}")
+        for hits in all_hits:
+            q_res = []
+            for hit in hits[0:topn]:
+                q_res.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
+            result.append(q_res)
 
-        for hit in hits[0:topn]:
-            result.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
         return result

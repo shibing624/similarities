@@ -31,9 +31,8 @@ class QPSImageTestCase(unittest.TestCase):
         m.add_corpus(imgs)
         t1 = time()
         size = 10
-        for q in imgs[:size]:
-            r = m.most_similar(q, topn=5)
-            # print(r)
+        r = m.most_similar(imgs[:size], topn=5)
+        # print(r)
         spend_time = time() - t1
         print('[search] spend time:', spend_time, ' seconds, count:', size, ', qps:', size / spend_time)
 
@@ -48,9 +47,8 @@ class QPSImageTestCase(unittest.TestCase):
         m.add_corpus(imgs)
         t1 = time()
         size = 10
-        for q in imgs[:size]:
-            r = m.most_similar(q, topn=5)
-            # print(r)
+        r = m.most_similar(imgs[:size], topn=5)
+        # print(r)
         spend_time = time() - t1
         print('[search] spend time:', spend_time, ' seconds, count:', size, ', qps:', size / spend_time)
 

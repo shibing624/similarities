@@ -9,21 +9,23 @@ Adjust the gensim similarities Index to compute sentence similarities.
 """
 
 import os
-from typing import List, Union
+from typing import List, Union, Tuple
 from tqdm import tqdm
 import jieba
 import jieba.analyse
 import jieba.posseg
 import numpy as np
 from loguru import logger
-from similarities.utils.distance import string_hash, hamming_distance, cosine_distance
+from similarities.utils.distance import string_hash, hamming_distance
+from similarities.utils.util import cos_sim
 from similarities.utils.rank_bm25 import BM25Okapi
 from similarities.utils.tfidf import TFIDF
+from similarities.similarity import SimilarityABC
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 
 
-class SimHashSimilarity:
+class SimHashSimilarity(SimilarityABC):
     """
     Compute SimHash similarity between two sentences and retrieves most
     similar sentence for a given corpus.
@@ -102,40 +104,70 @@ class SimHashSimilarity:
             score = 1.0 - hamming_distance(seq1, seq2) / len(seq1)
         return score
 
-    def similarity(self, text1: str, text2: str):
+    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
         """
-        Compute hamming similarity between two texts.
-        :param text1:
-        :param text2:
-        :return:
+        Compute hamming similarity between two sentences.
+
+        Parameters
+        ----------
+        text1 : str or list of str
+        text2 : str or list of str
+
+        Returns
+        -------
+        list of float
         """
-        seq1 = self.simhash(text1)
-        seq2 = self.simhash(text2)
-        similarity_score = self._sim_score(seq1, seq2)
+        if isinstance(text1, str):
+            text1 = [text1]
+        if isinstance(text2, str):
+            text2 = [text2]
+        if len(text1) != len(text2):
+            raise ValueError("expected two inputs of the same length")
+        seqs1 = [self.simhash(text) for text in text1]
+        seqs2 = [self.simhash(text) for text in text2]
+        scores = [self._sim_score(seq1, seq2) for seq1, seq2 in zip(seqs1, seqs2)]
+        return scores
 
-        return similarity_score
+    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+        """
+        Compute hamming distance between two sentences.
 
-    def distance(self, text1: str, text2: str):
-        """Compute cosine distance between two keys."""
-        return 1 - self.similarity(text1, text2)
+        Parameters
+        ----------
+        text1 : str or list of str
+        text2 : str or list of str
 
-    def most_similar(self, query: str, topn: int = 10):
+        Returns
+        -------
+        list of float
+        """
+        sim_scores = self.similarity(text1, text2)
+        return [1.0 - score for score in sim_scores]
+
+    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
         """
         Find the topn most similar texts to the query against the corpus.
-        :param query: str
+        :param queries: list of str or str
         :param topn: int
-        :return: list of tuples (text, similarity)
+        :return: list of list tuples (corpus_id, corpus_text, similarity_score)
         """
         result = []
-        query_emb = self.simhash(query)
-        for (corpus_id, doc), doc_emb in zip(enumerate(self.corpus), self.corpus_embeddings):
-            score = self._sim_score(query_emb, doc_emb)
-            result.append((corpus_id, doc, score))
-        result.sort(key=lambda x: x[2], reverse=True)
-        return result[:topn]
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+
+        for query in queries:
+            q_res = []
+            query_emb = self.simhash(query)
+            for (corpus_id, doc), doc_emb in zip(enumerate(self.corpus), self.corpus_embeddings):
+                score = self._sim_score(query_emb, doc_emb)
+                q_res.append((corpus_id, doc, score))
+            q_res.sort(key=lambda x: x[2], reverse=True)
+            result.append(q_res[:topn])
+
+        return result
 
 
-class TfidfSimilarity:
+class TfidfSimilarity(SimilarityABC):
     """
     Compute TFIDF similarity between two sentences and retrieves most
     similar sentence for a given corpus.
@@ -177,32 +209,46 @@ class TfidfSimilarity:
             self.corpus_embeddings = corpus_embeddings
         logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
-    def similarity(self, text1: str, text2: str):
+    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
         """
         Compute cosine similarity score between two sentences.
         :param text1:
         :param text2:
         :return:
         """
-        feature1, feature2 = self.tfidf.get_tfidf(text1), self.tfidf.get_tfidf(text2)
-        return cosine_distance(np.array(feature1), np.array(feature2))
+        if isinstance(text1, str):
+            text1 = [text1]
+        if isinstance(text2, str):
+            text2 = [text2]
+        features1 = [self.tfidf.get_tfidf(text) for text in text1]
+        features2 = [self.tfidf.get_tfidf(text) for text in text2]
+        return cos_sim(np.array(features1), np.array(features2))
 
-    def distance(self, text1: str, text2: str):
+    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
         """Compute cosine distance between two keys."""
-        return 1 - self.similarity(text1, text2)
+        return 1.0 - self.similarity(text1, text2)
 
-    def most_similar(self, query: str, topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
         """Find the topn most similar texts to the query against the corpus."""
         result = []
-        query_emb = self.tfidf.get_tfidf(query)
-        for (corpus_id, doc), doc_emb in zip(enumerate(self.corpus), self.corpus_embeddings):
-            score = cosine_distance(query_emb, doc_emb, normalize=True)
-            result.append((corpus_id, doc, score))
-        result.sort(key=lambda x: x[2], reverse=True)
-        return result[:topn]
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+
+        queries_embeddings = np.array([self.tfidf.get_tfidf(query) for query in queries], dtype=np.float32)
+        corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
+        scores = cos_sim(queries_embeddings, corpus_embeddings)
+        for query_id, query in enumerate(queries):
+            q_res = []
+            for corpus_id, doc in enumerate(self.corpus):
+                score = float(scores[query_id][corpus_id])
+                q_res.append((corpus_id, doc, score))
+            q_res.sort(key=lambda x: x[2], reverse=True)
+            result.append(q_res[:topn])
+
+        return result
 
 
-class BM25Similarity:
+class BM25Similarity(SimilarityABC):
     """
     Compute BM25OKapi similarity between two sentences and retrieves most
     similar sentence for a given corpus.
@@ -238,30 +284,23 @@ class BM25Similarity:
         self.bm25 = BM25Okapi(corpus_seg)
         logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
-    def _similarity(self, text1, text2):
-        """
-        Compute similarity score between two sentences.
-        :param text1:
-        :param text2:
-        :return:
-        """
-        raise NotImplementedError()
-
-    def _distance(self, text1, text2):
-        """Compute distance between two sentences."""
-        raise NotImplementedError()
-
-    def most_similar(self, query, topn=10):
-        tokens = jieba.lcut(query)
+    def most_similar(self, queries: Union[str, List[str]], topn=10) -> List[List[Tuple[int, str, float]]]:
+        result = []
         if not self.bm25:
             raise ValueError("BM25 model is not initialized. Please add_corpus first, eg. `add_corpus(corpus)`")
-        scores = self.bm25.get_scores(tokens)
-        result = [(corpus_id, self.corpus[corpus_id], score) for corpus_id, score in enumerate(scores)]
-        result.sort(key=lambda x: x[2], reverse=True)
-        return result[:topn]
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+        for query in queries:
+            tokens = jieba.lcut(query)
+            scores = self.bm25.get_scores(tokens)
+            q_res = [(corpus_id, self.corpus[corpus_id], score) for corpus_id, score in enumerate(scores)]
+            q_res.sort(key=lambda x: x[2], reverse=True)
+            result.append(q_res[:topn])
+
+        return result
 
 
-class WordEmbeddingSimilarity:
+class WordEmbeddingSimilarity(SimilarityABC):
     """
     Compute Word2Vec similarity between two sentences and retrieves most
     similar sentence for a given corpus.
@@ -317,33 +356,42 @@ class WordEmbeddingSimilarity:
     def _get_vector(self, text) -> np.ndarray:
         return self.keyedvectors.encode(text)
 
-    def similarity(self, text1: str, text2: str):
+    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
         """Compute cosine similarity between two texts."""
         v1 = self._get_vector(text1)
         v2 = self._get_vector(text2)
-        return cosine_distance(v1, v2)
+        return cos_sim(v1, v2)
 
-    def distance(self, text1: str, text2: str):
+    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
         """Compute cosine distance between two texts."""
         return 1 - self.similarity(text1, text2)
 
-    def most_similar(self, query: str, topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
         """
         Find the topn most similar texts to the query against the corpus.
-        :param query: str
+        :param queries: list of str or str
         :param topn: int
-        :return:
+        :return: list of list of tuples (corpus_id, corpus_text, similarity_score)
         """
         result = []
-        query_emb = self._get_vector(query)
-        for (corpus_id, doc), doc_emb in zip(enumerate(self.corpus), self.corpus_embeddings):
-            score = cosine_distance(query_emb, doc_emb, normalize=True)
-            result.append((corpus_id, doc, score))
-        result.sort(key=lambda x: x[2], reverse=True)
-        return result[:topn]
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+
+        queries_embeddings = np.array([self._get_vector(query) for query in queries], dtype=np.float32)
+        corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
+        scores = cos_sim(queries_embeddings, corpus_embeddings)
+        for query_id, query in enumerate(queries):
+            q_res = []
+            for corpus_id, doc in enumerate(self.corpus):
+                score = float(scores[query_id][corpus_id])
+                q_res.append((corpus_id, doc, score))
+            q_res.sort(key=lambda x: x[2], reverse=True)
+            result.append(q_res[:topn])
+
+        return result
 
 
-class CilinSimilarity:
+class CilinSimilarity(SimilarityABC):
     """
     Compute Cilin similarity between two sentences and retrieves most
     similar sentence for a given corpus.
@@ -432,42 +480,58 @@ class CilinSimilarity:
                     score += 1
         return score / 10
 
-    def similarity(self, text1: str, text2: str):
+    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
         """
         Compute Cilin similarity between two texts.
         :param text1:
         :param text2:
         :return:
         """
-        words1 = [word.word for word in jieba.posseg.cut(text1) if word.flag[0] not in ['u', 'x', 'w']]
-        words2 = [word.word for word in jieba.posseg.cut(text2) if word.flag[0] not in ['u', 'x', 'w']]
-        score_words1 = []
-        score_words2 = []
-        for word1 in words1:
-            score = max(self._word_sim(word1, word2) for word2 in words2)
-            score_words1.append(score)
-        for word2 in words2:
-            score = max(self._word_sim(word2, word1) for word1 in words1)
-            score_words2.append(score)
-        similarity_score = max(sum(score_words1) / len(words1), sum(score_words2) / len(words2))
+        if isinstance(text1, str):
+            text1 = [text1]
+        if isinstance(text2, str):
+            text2 = [text2]
+        if len(text1) != len(text2):
+            raise ValueError("expected two inputs of the same length")
 
-        return similarity_score
+        def calc_pair_sim(sentence1, sentence2):
+            words1 = [word.word for word in jieba.posseg.cut(sentence1) if word.flag[0] not in ['u', 'x', 'w']]
+            words2 = [word.word for word in jieba.posseg.cut(sentence2) if word.flag[0] not in ['u', 'x', 'w']]
+            score_words1 = []
+            score_words2 = []
+            for word1 in words1:
+                score = max(self._word_sim(word1, word2) for word2 in words2)
+                score_words1.append(score)
+            for word2 in words2:
+                score = max(self._word_sim(word2, word1) for word1 in words1)
+                score_words2.append(score)
+            similarity_score = max(sum(score_words1) / len(words1), sum(score_words2) / len(words2))
+            return similarity_score
 
-    def distance(self, text1: str, text2: str):
+        return [calc_pair_sim(sentence1, sentence2) for sentence1, sentence2 in zip(text1, text2)]
+
+    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
         """Compute cosine distance between two texts."""
-        return 1 - self.similarity(text1, text2)
+        return [1.0 - s for s in self.similarity(text1, text2)]
 
-    def most_similar(self, query: str, topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
         """Find the topn most similar texts to the query against the corpus."""
         result = []
-        for corpus_id, doc in enumerate(self.corpus):
-            score = self.similarity(query, doc)
-            result.append((corpus_id, doc, score))
-        result.sort(key=lambda x: x[2], reverse=True)
-        return result[:topn]
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+
+        for query in queries:
+            q_res = []
+            for corpus_id, doc in enumerate(self.corpus):
+                score = self.similarity(query, doc)[0]
+                q_res.append((corpus_id, doc, score))
+            q_res.sort(key=lambda x: x[2], reverse=True)
+            result.append(q_res[:topn])
+
+        return result
 
 
-class HownetSimilarity:
+class HownetSimilarity(SimilarityABC):
     """
     Compute Hownet similarity between two sentences and retrieves most
     similar sentence for a given corpus.
@@ -528,36 +592,52 @@ class HownetSimilarity:
         else:
             return 0
 
-    def similarity(self, text1: str, text2: str):
+    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
         """
         Computer Hownet similarity between two texts.
         :param text1:
         :param text2:
         :return:
         """
-        words1 = [word.word for word in jieba.posseg.cut(text1) if word.flag[0] not in ['u', 'x', 'w']]
-        words2 = [word.word for word in jieba.posseg.cut(text2) if word.flag[0] not in ['u', 'x', 'w']]
-        score_words1 = []
-        score_words2 = []
-        for word1 in words1:
-            score = max(self._word_sim(word1, word2) for word2 in words2)
-            score_words1.append(score)
-        for word2 in words2:
-            score = max(self._word_sim(word2, word1) for word1 in words1)
-            score_words2.append(score)
-        similarity_score = max(sum(score_words1) / len(words1), sum(score_words2) / len(words2))
+        if isinstance(text1, str):
+            text1 = [text1]
+        if isinstance(text2, str):
+            text2 = [text2]
+        if len(text1) != len(text2):
+            raise ValueError("expected two inputs of the same length")
 
-        return similarity_score
+        def calc_pair_sim(sentence1, sentence2):
+            words1 = [word.word for word in jieba.posseg.cut(sentence1) if word.flag[0] not in ['u', 'x', 'w']]
+            words2 = [word.word for word in jieba.posseg.cut(sentence2) if word.flag[0] not in ['u', 'x', 'w']]
+            score_words1 = []
+            score_words2 = []
+            for word1 in words1:
+                score = max(self._word_sim(word1, word2) for word2 in words2)
+                score_words1.append(score)
+            for word2 in words2:
+                score = max(self._word_sim(word2, word1) for word1 in words1)
+                score_words2.append(score)
+            similarity_score = max(sum(score_words1) / len(words1), sum(score_words2) / len(words2))
+            return similarity_score
 
-    def distance(self, text1: str, text2: str):
-        """Compute cosine distance between two keys."""
-        return 1 - self.similarity(text1, text2)
+        return [calc_pair_sim(sentence1, sentence2) for sentence1, sentence2 in zip(text1, text2)]
 
-    def most_similar(self, query: str, topn: int = 10):
+    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+        """Compute Hownet distance between two keys."""
+        return [1.0 - s for s in self.similarity(text1, text2)]
+
+    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
         """Find the topn most similar texts to the query against the corpus."""
         result = []
-        for corpus_id, doc in enumerate(self.corpus):
-            score = self.similarity(query, doc)
-            result.append((corpus_id, doc, score))
-        result.sort(key=lambda x: x[2], reverse=True)
-        return result[:topn]
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+
+        for query in queries:
+            q_res = []
+            for corpus_id, doc in enumerate(self.corpus):
+                score = self.similarity(query, doc)[0]
+                q_res.append((corpus_id, doc, score))
+            q_res.sort(key=lambda x: x[2], reverse=True)
+            result.append(q_res[:topn])
+
+        return result

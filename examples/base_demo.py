@@ -24,6 +24,7 @@ print(model)
 similarity_score = model.similarity(sentences[0], sentences[1])
 print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
 
+print('-' * 50 + '\n')
 # 2.Compute similarity between two list
 similarity_scores = model.similarity(sentences, corpus)
 print(similarity_scores.numpy())
@@ -31,9 +32,9 @@ for i in range(len(sentences)):
     for j in range(len(corpus)):
         print(f"{sentences[i]} vs {corpus[j]}, score: {similarity_scores.numpy()[i][j]:.4f}")
 
+print('-' * 50 + '\n')
 # 3.Semantic Search
 model.add_corpus(corpus)
-q = '如何更换花呗绑定银行卡'
-print("query:", q)
-for i in model.most_similar(q, topn=5):
-    print('\t', i)
+res = model.most_similar(queries=sentences, topn=3)
+for q, r in zip(sentences, res):
+    print(f"{q} -> {r}")

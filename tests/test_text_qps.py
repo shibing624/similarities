@@ -11,6 +11,7 @@ from time import time
 sys.path.append('..')
 from similarities import Similarity, HnswlibSimilarity, SimHashSimilarity
 from similarities import *
+
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 sts_test_path = os.path.join(pwd_path, 'test.txt')
 
@@ -46,14 +47,31 @@ class QPSSimTestCase(unittest.TestCase):
         m.add_corpus(sents2)
         t1 = time()
         size = 100
-        for q in sents1[:size]:
-            r = m.most_similar(q, topn=5)
-            # print(r)
+        r = m.most_similar(sents1[:size], topn=5)
+        # print(r)
         spend_time = time() - t1
         print('[search] spend time:', spend_time, ' seconds, count:', size, ', qps:', size / spend_time)
 
     def test_hnsw_speed(self):
         m = HnswlibSimilarity()
+        t1 = time()
+        a = sents1[:100]
+        b = sents2[:100]
+        r = m.similarity(a, b)
+        print(r[:10])
+        print(labels[:10])
+        spend_time = time() - t1
+        print('[sim] spend time:', spend_time, ' seconds, count:', len(a), ', qps:', len(a) / spend_time)
+        m.add_corpus(b)
+        t1 = time()
+        size = 100
+        r = m.most_similar(sents1[:size], topn=5)
+        # print(r)
+        spend_time = time() - t1
+        print('[search] spend time:', spend_time, ' seconds, count:', size, ', qps:', size / spend_time)
+
+    def test_w2v_speed(self):
+        m = WordEmbeddingSimilarity()
         t1 = time()
         r = m.similarity(sents1, sents2)
         print(r[:10])
@@ -63,40 +81,15 @@ class QPSSimTestCase(unittest.TestCase):
         m.add_corpus(sents2)
         t1 = time()
         size = 100
-        for q in sents1[:size]:
-            r = m.most_similar(q, topn=5)
-            # print(r)
-        spend_time = time() - t1
-        print('[search] spend time:', spend_time, ' seconds, count:', size, ', qps:', size / spend_time)
-
-
-    def test_w2v_speed(self):
-        m = WordEmbeddingSimilarity()
-        t1 = time()
-        r = []
-        for i,j in zip(sents1, sents2):
-            s = m.similarity(i, j)
-            r.append(s)
-        print(r[:10])
-        print(labels[:10])
-        spend_time = time() - t1
-        print('[sim] spend time:', spend_time, ' seconds, count:', len(sents2), ', qps:', len(sents2) / spend_time)
-        m.add_corpus(sents2)
-        t1 = time()
-        size = 100
-        for q in sents1[:size]:
-            r = m.most_similar(q, topn=5)
-            # print(r)
+        r = m.most_similar(sents1[:size], topn=5)
+        # print(r)
         spend_time = time() - t1
         print('[search] spend time:', spend_time, ' seconds, count:', size, ', qps:', size / spend_time)
 
     def test_simhash_speed(self):
         m = SimHashSimilarity()
         t1 = time()
-        r = []
-        for i,j in zip(sents1, sents2):
-            s = m.similarity(i, j)
-            r.append(s)
+        r = m.similarity(sents1, sents2)
         print(r[:10])
         print(labels[:10])
         spend_time = time() - t1
@@ -104,29 +97,26 @@ class QPSSimTestCase(unittest.TestCase):
         m.add_corpus(sents2)
         t1 = time()
         size = 100
-        for q in sents1[:size]:
-            r = m.most_similar(q, topn=5)
-            # print(r)
+        r = m.most_similar(sents1[:size], topn=5)
+        # print(r)
         spend_time = time() - t1
         print('[search] spend time:', spend_time, ' seconds, count:', size, ', qps:', size / spend_time)
 
     def test_tfidf_speed(self):
         m = TfidfSimilarity()
         t1 = time()
-        r = []
-        for i,j in zip(sents1, sents2):
-            s = m.similarity(i, j)
-            r.append(s)
-        print(r[:10])
-        print(labels[:10])
+        a = sents1[:100]
+        b = sents2[:100]
+        r = m.similarity(a, b)
+        for i in range(len(a)):
+            print(r[i][i], labels[i])
         spend_time = time() - t1
-        print('[sim] spend time:', spend_time, ' seconds, count:', len(sents2), ', qps:', len(sents2) / spend_time)
+        print('[sim] spend time:', spend_time, ' seconds, count:', len(a), ', qps:', len(a) / spend_time)
         m.add_corpus(sents2)
         t1 = time()
         size = 100
-        for q in sents1[:size]:
-            r = m.most_similar(q, topn=5)
-            # print(r)
+        r = m.most_similar(sents1[:size], topn=5)
+        # print(r)
         spend_time = time() - t1
         print('[search] spend time:', spend_time, ' seconds, count:', size, ', qps:', size / spend_time)
 
@@ -135,11 +125,11 @@ class QPSSimTestCase(unittest.TestCase):
         m.add_corpus(sents2)
         t1 = time()
         size = 100
-        for q in sents1[:size]:
-            r = m.most_similar(q, topn=5)
-            # print(r)
+        r = m.most_similar(sents1[:size], topn=5)
+        # print(r)
         spend_time = time() - t1
         print('[search] spend time:', spend_time, ' seconds, count:', size, ', qps:', size / spend_time)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -67,7 +67,7 @@ class LiteralCase(unittest.TestCase):
         print(seq2)
         s = m.similarity(text1, text2)
         print(s)
-        self.assertTrue(s > 0)
+        self.assertTrue(s[0] > 0.5)
 
     def test_simhash(self):
         """test_simhash"""
@@ -76,13 +76,13 @@ class LiteralCase(unittest.TestCase):
         m = SimHashSimilarity()
         print(m.similarity(text1, text2))
         print(m.distance(text1, text2))
-        print(m.most_similar('刘若英是演员'))
-        self.assertEqual(len(m.most_similar('刘若英是演员')), 0)
+        r = m.most_similar('刘若英是演员')
+        self.assertEqual(len(r[0]), 0)
         zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
         m.add_corpus(zh_list)
         r = m.most_similar('刘若英是演员', topn=2)
         print(r)
-        self.assertEqual(len(r), 2)
+        self.assertEqual(len(r[0]), 2)
 
     def test_tfidf(self):
         """test_tfidf"""
@@ -93,8 +93,12 @@ class LiteralCase(unittest.TestCase):
         print(m.distance(text1, text2))
         zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌', '我不是演员吗']
         m.add_corpus(zh_list)
-        print(m.most_similar('刘若英是演员'))
-        self.assertEqual(len(m.most_similar('刘若英是演员')), 4)
+        r = m.most_similar('刘若英是演员')
+        print(r)
+        self.assertEqual(len(r[0]), 4)
+        r = m.most_similar(['刘若英是演员', '唱歌很好听'])
+        print(r)
+        self.assertEqual(len(r), 2)
 
     def test_bm25(self):
         """test_bm25"""
@@ -103,8 +107,12 @@ class LiteralCase(unittest.TestCase):
         m = BM25Similarity()
         zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌', '我不是演员吗']
         m.add_corpus(zh_list)
-        print(m.most_similar('刘若英是演员'))
-        self.assertEqual(len(m.most_similar('刘若英是演员')), 4)
+        r = m.most_similar('刘若英是演员', topn=10)
+        print(r)
+        self.assertEqual(len(r[0]), 4)
+        r = m.most_similar(['刘若英是演员', '唱歌很好听'])
+        print(r)
+        self.assertEqual(len(r), 2)
 
     def test_word2vec(self):
         """test_word2vec"""
@@ -120,11 +128,12 @@ class LiteralCase(unittest.TestCase):
         m.add_corpus(list_of_corpus2 + zh_list)
         v = m._get_vector("This is a test1")
         print(v[:10], v.shape)
-        print(m.similarity("This is a test1", "that is a test5"))
-        print(m.distance("This is a test1", "that is a test5"))
-        print(m.most_similar("This is a test1"))
-        print(m.most_similar("刘若英是演员"))
-        self.assertEqual(len(m.most_similar('刘若英是演员', topn=6)), 6)
+        r = m.most_similar('刘若英是演员', topn=4)
+        print(r)
+        self.assertEqual(len(r[0]), 4)
+        r = m.most_similar(['刘若英是演员', '唱歌很好听'])
+        print(r)
+        self.assertEqual(len(r), 2)
 
     def test_cilin(self):
         """test_cilin"""
@@ -135,8 +144,12 @@ class LiteralCase(unittest.TestCase):
         print(m.distance(text1, text2))
         zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
         m.add_corpus(zh_list)
-        print(m.most_similar('刘若英是演员'))
-        self.assertEqual(len(m.most_similar('刘若英是演员')), 3)
+        r = m.most_similar('刘若英是演员', topn=3)
+        print(r)
+        self.assertEqual(len(r[0]), 3)
+        r = m.most_similar(['刘若英是演员', '唱歌很好听'])
+        print(r)
+        self.assertEqual(len(r), 2)
 
     def test_hownet(self):
         """test_cilin"""
@@ -147,8 +160,12 @@ class LiteralCase(unittest.TestCase):
         print(m.distance(text1, text2))
         zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
         m.add_corpus(zh_list)
-        print(m.most_similar('刘若英是演员'))
-        self.assertEqual(len(m.most_similar('刘若英是演员')), 3)
+        r = m.most_similar('刘若英是演员', topn=2)
+        print(r)
+        self.assertEqual(len(r[0]), 2)
+        r = m.most_similar(['刘若英是演员', '唱歌很好听'])
+        print(r)
+        self.assertEqual(len(r), 2)
 
 
 if __name__ == '__main__':

@@ -7,57 +7,56 @@ import os
 import sys
 
 sys.path.append('..')
-from text2vec import SentenceModel
 from similarities.fastsim import AnnoySimilarity
 from similarities.fastsim import HnswlibSimilarity
 
-sm = SentenceModel()
+sentences = ['如何更换花呗绑定银行卡',
+             '花呗更改绑定银行卡']
+corpus = [
+    '花呗更改绑定银行卡',
+    '我什么时候开通了花呗',
+    '俄罗斯警告乌克兰反对欧盟协议',
+    '暴风雨掩埋了东北部；新泽西16英寸的降雪',
+    '中央情报局局长访问以色列叙利亚会谈',
+    '人在巴基斯坦基地的炸弹袭击中丧生',
+    '我喜欢这首歌'
+]
 
 
-def hnswlib():
-    list_of_docs = ["This is a test1", "This is a test2", "This is a test3", '刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
-    list_of_docs2 = ["that is test4", "that is a test5", "that is a test6", '刘若英个演员', '唱歌很好听', 'men喜欢这首歌']
-
-    m = HnswlibSimilarity(sm, embedding_size=384, corpus=list_of_docs * 10)
-    print(m)
-    print(m.similarity("This is a test1", "that is a test5"))
-    print(m.distance("This is a test1", "that is a test5"))
-    print(m.most_similar("This is a test4"))
-    print(m.most_similar("men喜欢这首歌"))
-    m.add_corpus(list_of_docs2)
-    m.build_index()
-    print(m.most_similar("This is a test4"))
-    print(m.most_similar("men喜欢这首歌"))
-
-    m.save_index('test.model')
-    m.load_index('test.model')
-    print(m.most_similar("This is a test4"))
-    print(m.most_similar("men喜欢这首歌"))
+def hnswlib_demo():
+    model = HnswlibSimilarity(corpus=corpus * 10)
+    print(model)
+    similarity_score = model.similarity(sentences[0], sentences[1])
+    print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
+    model.add_corpus(corpus)
+    model.build_index()
+    model.save_index('test.model')
+    # Semantic Search batch
+    print(model.most_similar("men喜欢这首歌"))
+    queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
+    res = model.most_similar(queries, topn=3)
+    for q, r in zip(queries, res):
+        print(f"{q} -> {r}")
     os.remove('test.model')
+    print('-' * 50 + '\n')
 
-
-def annoy():
-    list_of_docs = ["This is a test1", "This is a test2", "This is a test3", '刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
-    list_of_docs2 = ["that is test4", "that is a test5", "that is a test6", '刘若英个演员', '唱歌很好听', 'men喜欢这首歌']
-
-    m = AnnoySimilarity(sm, embedding_size=384, corpus=list_of_docs * 10)
-    print(m)
-    print(m.similarity("This is a test1", "that is a test5"))
-    print(m.distance("This is a test1", "that is a test5"))
-    print(m.most_similar("This is a test4"))
-    print(m.most_similar("men喜欢这首歌"))
-    m.add_corpus(list_of_docs2)
-    m.build_index()
-    print(m.most_similar("This is a test4"))
-    print(m.most_similar("men喜欢这首歌"))
-
-    m.save_index('test.model')
-    m.load_index('test.model')
-    print(m.most_similar("This is a test4"))
-    print(m.most_similar("men喜欢这首歌"))
+def annoy_demo():
+    model = AnnoySimilarity(corpus=corpus * 10)
+    print(model)
+    similarity_score = model.similarity(sentences[0], sentences[1])
+    print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
+    model.add_corpus(corpus)
+    model.build_index()
+    model.save_index('test.model')
+    # Semantic Search batch
+    print(model.most_similar("men喜欢这首歌"))
+    queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
+    res = model.most_similar(queries, topn=3)
+    for q, r in zip(queries, res):
+        print(f"{q} -> {r}")
     os.remove('test.model')
-
+    print('-' * 50 + '\n')
 
 if __name__ == '__main__':
-    hnswlib()
-    annoy()
+    # hnswlib_demo()
+    annoy_demo()

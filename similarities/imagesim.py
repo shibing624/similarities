@@ -6,22 +6,23 @@
 refer: https://colab.research.google.com/drive/1leOzG-AQw5MkzgA4qNW5fb3yc-oJ4Lo4
 Adjust the code to compare similarity score and search.
 """
-import math
-from typing import List, Union
 
+from typing import List, Union, Tuple
+
+import math
 import numpy as np
 from PIL import Image
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
-from similarities.similarity import semantic_search
+from similarities.similarity import SimilarityABC
 from similarities.utils.distance import hamming_distance
 from similarities.utils.imagehash import phash, dhash, whash, average_hash
-from similarities.utils.util import cos_sim
+from similarities.utils.util import cos_sim, semantic_search, dot_score
 
 
-class ClipSimilarity:
+class ClipSimilarity(SimilarityABC):
     """
     Compute CLIP similarity between two images and retrieves most
     similar image for a given image corpus.
@@ -33,6 +34,7 @@ class ClipSimilarity:
         self.corpus = []
         self.clip_model = SentenceTransformer(model_name_or_path)  # load the CLIP model
         self.corpus_embeddings = []
+        self.score_functions = {'cos_sim': cos_sim, 'dot': dot_score}
         if corpus is not None:
             self.add_corpus(corpus)
 
@@ -80,43 +82,49 @@ class ClipSimilarity:
         imgs = [self._convert_to_rgb(img) for img in imgs]
         return self.clip_model.encode(imgs, batch_size=128, convert_to_tensor=False, show_progress_bar=True)
 
-    def similarity(self, img_paths1: Union[str, List[str]], img_paths2: Union[str, List[str]]):
+    def similarity(self, img_paths1: Union[str, List[str]], img_paths2: Union[str, List[str]],
+                   score_function: str = "cos_sim"):
         """
         Compute similarity between two image files.
         :param img_paths1: image file path 1
         :param img_paths2: image file path 2
         :return: similarity score
         """
+        if score_function not in self.score_functions:
+            raise ValueError(f"score function: {score_function} must be either (cos_sim) for cosine similarity"
+                             " or (dot) for dot product")
+        score_function = self.score_functions[score_function]
         embs1 = self._get_vector(img_paths1)
         embs2 = self._get_vector(img_paths2)
-        similarity_score = cos_sim(embs1, embs2)
 
-        return similarity_score
+        return score_function(embs1, embs2)
 
-    def distance(self, fp1: str, fp2: str):
+    def distance(self, img_paths1: Union[str, List[str]], img_paths2: Union[str, List[str]]):
         """Compute distance between two image files."""
-        return 1 - self.similarity(fp1, fp2)
+        return 1.0 - self.similarity(img_paths1, img_paths2)
 
-    def most_similar(self, query_fp: str, topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
         """
         Find the topn most similar images to the query against the corpus.
-        :param query_fp: str
+        :param queries: list of str
         :param topn: int
-        :return: list of tuples (id, image_path, similarity)
+        :return: list of each query result tuples (corpus_id, corpus_img_path, similarity_score)
         """
         result = []
-        q_emb = self._get_vector(query_fp)
-
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+        queries_embeddings = self._get_vector(queries)
         # Computes the cosine-similarity between the query embedding and all image embeddings.
-        hits = semantic_search(q_emb, np.array(self.corpus_embeddings, dtype=np.float32), top_k=topn)
-        hits = hits[0]  # Get the first query result when query is string
-
-        for hit in hits[:topn]:
-            result.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
+        all_hits = semantic_search(queries_embeddings, np.array(self.corpus_embeddings, dtype=np.float32), top_k=topn)
+        for hits in all_hits:
+            q_res = []
+            for hit in hits[0:topn]:
+                q_res.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
+            result.append(q_res)
         return result
 
 
-class ImageHashSimilarity:
+class ImageHashSimilarity(SimilarityABC):
     """
     Compute Phash similarity between two images and retrieves most
     similar image for a given image corpus.
@@ -168,42 +176,52 @@ class ImageHashSimilarity:
         """Compute hamming similarity between two seqs."""
         return 1.0 - hamming_distance(seq1, seq2) / len(seq1)
 
-    def similarity(self, fp1: str, fp2: str):
+    def similarity(self, img_paths1: Union[str, List[str]], img_paths2: Union[str, List[str]]):
         """
         Compute similarity between two image files.
-        :param fp1: image file path 1
-        :param fp2: image file path 2
-        :return: similarity score
+        :param img_paths1: image file paths 1
+        :param img_paths2: image file paths 2
+        :return: list of float, similarity score
         """
-        img1 = Image.open(fp1)
-        img2 = Image.open(fp2)
-        seq1 = str(self.hash_function(img1, self.hash_size))
-        seq2 = str(self.hash_function(img2, self.hash_size))
-        similarity_score = self._sim_score(seq1, seq2)
+        if isinstance(img_paths1, str):
+            img_paths1 = [img_paths1]
+        if isinstance(img_paths2, str):
+            img_paths2 = [img_paths2]
+        if len(img_paths1) != len(img_paths2):
+            raise ValueError("expected two inputs of the same length")
 
-        return similarity_score
+        seqs1 = [str(self.hash_function(Image.open(i), self.hash_size)) for i in img_paths1]
+        seqs2 = [str(self.hash_function(Image.open(i), self.hash_size)) for i in img_paths2]
+        scores = [self._sim_score(seq1, seq2) for seq1, seq2 in zip(seqs1, seqs2)]
+        return scores
 
-    def distance(self, fp1: str, fp2: str):
+    def distance(self, img_paths1: Union[str, List[str]], img_paths2: Union[str, List[str]]):
         """Compute distance between two image files."""
-        return 1 - self.similarity(fp1, fp2)
+        sim_scores = self.similarity(img_paths1, img_paths2)
+        return [1.0 - score for score in sim_scores]
 
-    def most_similar(self, query_fp: str, topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
         """
         Find the topn most similar images to the query against the corpus.
-        :param query_fp: str
+        :param queries: str of list of str, image file paths
         :param topn: int
-        :return: list of tuples (id, image_path, similarity)
+        :return: list of list tuples (id, image_path, similarity)
         """
         result = []
-        q_seq = str(self.hash_function(Image.open(query_fp), self.hash_size))
-        for (corpus_id, doc), doc_seq in zip(enumerate(self.corpus), self.corpus_embeddings):
-            score = self._sim_score(q_seq, doc_seq)
-            result.append((corpus_id, doc, score))
-        result.sort(key=lambda x: x[2], reverse=True)
-        return result[:topn]
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+        for query in queries:
+            q_res = []
+            q_seq = str(self.hash_function(Image.open(query), self.hash_size))
+            for (corpus_id, doc), doc_seq in zip(enumerate(self.corpus), self.corpus_embeddings):
+                score = self._sim_score(q_seq, doc_seq)
+                q_res.append((corpus_id, doc, score))
+            q_res.sort(key=lambda x: x[2], reverse=True)
+            result.append(q_res[:topn])
+        return result
 
 
-class SiftSimilarity:
+class SiftSimilarity(SimilarityABC):
     """
     Compute SIFT similarity between two images and retrieves most
     similar image for a given image corpus.
@@ -292,7 +310,7 @@ class SiftSimilarity:
             if m.distance < 0.75 * n.distance:
                 good_matches.append(m)
                 good_matches_sum += m.distance
-        if len(good_matches) < 5:
+        if len(good_matches) < 3:
             return score
         bestN = 5
         topBestNSum = 0
@@ -302,36 +320,52 @@ class SiftSimilarity:
         score = (topBestNSum / bestN) * good_matches_sum / len(good_matches)
         return score
 
-    def similarity(self, fp1: str, fp2: str):
+    def similarity(self, img_paths1: Union[str, List[str]], img_paths2: Union[str, List[str]]):
         """
         Compute similarity between two image files.
-        :param fp1: image file path 1
-        :param fp2: image file path 2
-        :return: similarity score
+        :param img_paths1: image file paths 1
+        :param img_paths2: image file paths 2
+        :return: list of float, similarity score
         """
-        similarity_score = 0.0
-        _, desc1 = self.calculate_descr(Image.open(fp1))
-        _, desc2 = self.calculate_descr(Image.open(fp2))
-        if desc1.size > 0 and desc2.size > 0:
-            similarity_score = self._sim_score(desc1, desc2)
+        if isinstance(img_paths1, str):
+            img_paths1 = [img_paths1]
+        if isinstance(img_paths2, str):
+            img_paths2 = [img_paths2]
+        if len(img_paths1) != len(img_paths2):
+            raise ValueError("expected two inputs of the same length")
 
-        return similarity_score
+        scores = []
+        for fp1, fp2 in zip(img_paths1, img_paths2):
+            score = 0.0
+            _, desc1 = self.calculate_descr(Image.open(fp1))
+            _, desc2 = self.calculate_descr(Image.open(fp2))
+            if desc1.size > 0 and desc2.size > 0:
+                score = self._sim_score(desc1, desc2)
+            scores.append(score)
 
-    def distance(self, fp1: str, fp2: str):
+        return scores
+
+    def distance(self, img_paths1: Union[str, List[str]], img_paths2: Union[str, List[str]]):
         """Compute distance between two keys."""
-        return 1 - self.similarity(fp1, fp2)
+        sim_scores = self.similarity(img_paths1, img_paths2)
+        return [1.0 - score for score in sim_scores]
 
-    def most_similar(self, query_fp: str, topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
         """
         Find the topn most similar images to the query against the corpus.
-        :param query_fp: str
+        :param queries: str of list of str, image file paths
         :param topn: int
-        :return: list of tuples (id, image_path, similarity)
+        :return: list of list tuples (id, image_path, similarity)
         """
         result = []
-        _, q_desc = self.calculate_descr(Image.open(query_fp))
-        for (corpus_id, doc), doc_desc in zip(enumerate(self.corpus), self.corpus_embeddings):
-            score = self._sim_score(q_desc, doc_desc)
-            result.append((corpus_id, doc, score))
-        result.sort(key=lambda x: x[2], reverse=True)
-        return result[:topn]
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+        for query in queries:
+            q_res = []
+            _, q_desc = self.calculate_descr(Image.open(query))
+            for (corpus_id, doc), doc_desc in zip(enumerate(self.corpus), self.corpus_embeddings):
+                score = self._sim_score(q_desc, doc_desc)
+                q_res.append((corpus_id, doc, score))
+            q_res.sort(key=lambda x: x[2], reverse=True)
+            result.append(q_res[:topn])
+        return result

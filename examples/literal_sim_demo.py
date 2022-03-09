@@ -16,64 +16,122 @@ logger.remove()
 logger.add(sys.stderr, level="INFO")
 
 
-def main():
-    text1 = '刘若英是个演员'
-    text2 = '他唱歌很好听'
+def simhash_demo():
     m = SimHashSimilarity()
     print(m)
-    print(m.similarity(text1, text2))
-    print(m.distance(text1, text2))
-    print(m.most_similar('刘若英是演员'))
-    zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
-    m.add_corpus(zh_list)
-    print(m.most_similar('刘若英是演员'))
+    sim_scores = m.similarity(text1, text2)
+    print('sim scores: ', sim_scores)
+    for i, j, s in zip(text1, text2, sim_scores):
+        print(f"{i} vs {j}, score: {s:.4f}")
+    m.add_corpus(corpus)
+    search_res = m.most_similar(queries, topn=3)
+    print('sim search: ', search_res)
+    for q, r in zip(queries, search_res):
+        print(f"query: {q}\t search result: {r}")
+    print('-' * 50 + '\n')
 
-    text1 = "如何更换花呗绑定银行卡"
-    text2 = "花呗更改绑定银行卡"
+
+def tfidf_demo():
     m = TfidfSimilarity()
     print(m)
-    print(text1, text2, ' sim score: ', m.similarity(text1, text2))
-    print('distance:', m.distance(text1, text2))
-    zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌', '我不是演员吗']
-    m.add_corpus(zh_list)
-    print(m.most_similar('刘若英是演员'))
+    sim_scores = m.similarity(text1, text2).numpy()
+    print('sim scores: ', sim_scores)
+    for (idx, i), j in zip(enumerate(text1), text2):
+        s = sim_scores[idx][idx]
+        print(f"{i} vs {j}, score: {s:.4f}")
+    m.add_corpus(corpus)
+    search_res = m.most_similar(queries, topn=3)
+    print('sim search: ', search_res)
+    for q, r in zip(queries, search_res):
+        print(f"query: {q}\t search result: {r}")
+    print('-' * 50 + '\n')
 
+
+def bm25_demo():
     m = BM25Similarity()
     print(m)
-    zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌', '我不是演员吗']
-    m.add_corpus(zh_list)
-    print(m.most_similar('刘若英是演员'))
+    m.add_corpus(corpus)
+    search_res = m.most_similar(queries, topn=3)
+    print('sim search: ', search_res)
+    for q, r in zip(queries, search_res):
+        print(f"query: {q}\t search result: {r}")
+    print('-' * 50 + '\n')
 
+
+def wordemb_demo():
     wm = Word2Vec()
+    m = WordEmbeddingSimilarity(wm)
     print(m)
-    list_of_corpus = ["This is a test1", "This is a test2", "This is a test3"]
-    list_of_corpus2 = ["that is test4", "that is a test5", "that is a test6"]
-    m = WordEmbeddingSimilarity(wm, list_of_corpus)
-    m.add_corpus(list_of_corpus2)
-    v = m._get_vector("This is a test1")
-    print(v[:10], v.shape)
-    print(m.similarity("This is a test1", "that is a test5"))
-    print(m.distance("This is a test1", "that is a test5"))
-    print(m.most_similar("This is a test1"))
+    sim_scores = m.similarity(text1, text2)
+    print('sim scores: ', sim_scores)
+    for (idx, i), j in zip(enumerate(text1), text2):
+        s = sim_scores[idx][idx]
+        print(f"{i} vs {j}, score: {s:.4f}")
+    m.add_corpus(corpus)
+    search_res = m.most_similar(queries, topn=3)
+    print('sim search: ', search_res)
+    for q, r in zip(queries, search_res):
+        print(f"query: {q}\t search result: {r}")
+    print('-' * 50 + '\n')
 
-    text1 = '周杰伦是一个歌手'
-    text2 = '刘若英是个演员'
+
+def cilin_demo():
     m = CilinSimilarity()
     print(m)
-    print(m.similarity(text1, text2))
-    print(m.distance(text1, text2))
-    zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
-    m.add_corpus(zh_list)
-    print(m.most_similar('刘若英是演员'))
+    sim_scores = m.similarity(text1, text2)
+    print('sim scores: ', sim_scores)
+    for i, j, s in zip(text1, text2, sim_scores):
+        print(f"{i} vs {j}, score: {s:.4f}")
+    m.add_corpus(corpus)
+    search_res = m.most_similar(queries, topn=3)
+    print('sim search: ', search_res)
+    for q, r in zip(queries, search_res):
+        print(f"query: {q}\t search result: {r}")
+    print('-' * 50 + '\n')
 
+
+def hownet_demo():
     m = HownetSimilarity()
     print(m)
-    print(m.similarity(text1, text2))
-    print(m.distance(text1, text2))
-    zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
-    m.add_corpus(zh_list)
-    print(m.most_similar('刘若英是演员'))
+    sim_scores = m.similarity(text1, text2)
+    print('sim scores: ', sim_scores)
+    for i, j, s in zip(text1, text2, sim_scores):
+        print(f"{i} vs {j}, score: {s:.4f}")
+    m.add_corpus(corpus)
+    search_res = m.most_similar(queries, topn=3)
+    print('sim search: ', search_res)
+    for q, r in zip(queries, search_res):
+        print(f"query: {q}\t search result: {r}")
 
 
 if __name__ == '__main__':
-    main()
+    text1 = [
+        '如何更换花呗绑定银行卡',
+        '花呗更改绑定银行卡'
+    ]
+    text2 = [
+        '花呗更改绑定银行卡',
+        '我什么时候开通了花呗',
+    ]
+    corpus = [
+        '花呗更改绑定银行卡',
+        '我什么时候开通了花呗',
+        '俄罗斯警告乌克兰反对欧盟协议',
+        '暴风雨掩埋了东北部；新泽西16英寸的降雪',
+        '中央情报局局长访问以色列叙利亚会谈',
+        '人在巴基斯坦基地的炸弹袭击中丧生',
+    ]
+
+    queries = [
+        '我的花呗开通了？',
+        '乌克兰被俄罗斯警告'
+    ]
+    print('text1: ', text1)
+    print('text2: ', text2)
+    print('query: ', queries)
+    simhash_demo()
+    tfidf_demo()
+    bm25_demo()
+    wordemb_demo()
+    cilin_demo()
+    hownet_demo()

@@ -31,8 +31,8 @@ def cos_sim(a: Union[torch.Tensor, np.ndarray], b: Union[torch.Tensor, np.ndarra
     if len(b.shape) == 1:
         b = b.unsqueeze(0)
 
-    a_norm = normalize_embeddings(a)
-    b_norm = normalize_embeddings(b)
+    a_norm = torch.nn.functional.normalize(a, p=2, dim=1)
+    b_norm = torch.nn.functional.normalize(b, p=2, dim=1)
     return torch.mm(a_norm, b_norm.transpose(0, 1))
 
 
