@@ -7,18 +7,18 @@ refer: https://colab.research.google.com/drive/1leOzG-AQw5MkzgA4qNW5fb3yc-oJ4Lo4
 Adjust the code to compare similarity score and search.
 """
 
+import math
 from typing import List, Union, Dict
 
-import math
 import numpy as np
 from PIL import Image
 from loguru import logger
 from tqdm import tqdm
 
-from similarities.similarity import SimilarityABC, Similarity
+from similarities.clip_model import CLIPModel
+from similarities.similarity import SimilarityABC
 from similarities.utils.distance import hamming_distance
 from similarities.utils.imagehash import phash, dhash, whash, average_hash
-from similarities.clip_model import CLIPModel
 from similarities.utils.util import cos_sim, semantic_search, dot_score
 
 
