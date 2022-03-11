@@ -8,12 +8,13 @@ Compute similarity:
 2. Retrieves most similar sentence of a query against a corpus of documents.
 """
 
-from typing import List, Union, Tuple, Dict, Any
-
 import os
+from typing import List, Union, Dict
+
 import numpy as np
 from loguru import logger
 from text2vec import SentenceModel
+
 from similarities.utils.util import cos_sim, semantic_search, dot_score
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"

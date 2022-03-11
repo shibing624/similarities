@@ -20,24 +20,37 @@ from similarities.evaluation import evaluate
 random.seed(42)
 
 pwd_path = os.path.dirname(os.path.realpath(__file__))
+
+
 #### Download scifact.zip dataset and unzip the dataset
-dataset = "scifact"
-url = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{}.zip".format(dataset)
-zip_file = os.path.join(pwd_path, "scifact.zip")
-if not os.path.exists(zip_file):
-    logger.info("Dataset not exists, downloading...")
-    http_get(url, zip_file)
-else:
-    logger.info("Dataset already exists, skipping download.")
+def get_scifact():
+    # Download scifact.zip dataset and unzip the dataset
+    dataset = "scifact"
+    url = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{}.zip".format(dataset)
+    zip_file = os.path.join(pwd_path, "scifact.zip")
+    if not os.path.exists(zip_file):
+        logger.info("Dataset not exists, downloading...")
+        http_get(url, zip_file, extract=True)
+    else:
+        logger.info("Dataset already exists, skipping download.")
+    data_path = os.path.join(pwd_path, dataset)
+    return data_path
+
 
 def get_dbpedia():
     dataset = "dbpedia-entity"
     url = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{}.zip".format(dataset)
-    out_dir = os.path.join(pathlib.Path(__file__).parent.absolute(), "dbpedia-entity.zip")
-    data_path = http_get(url, out_dir)
+    zip_file = os.path.join(pwd_path, "dbpedia-entity.zip")
+    if not os.path.exists(zip_file):
+        logger.info("Dataset not exists, downloading...")
+        http_get(url, zip_file, extract=True)
+    else:
+        logger.info("Dataset already exists, skipping download.")
+    data_path = os.path.join(pwd_path, dataset)
     return data_path
 
-data_path = os.path.join(pwd_path, dataset)
+
+data_path = get_scifact()
 #### Loading test queries and corpus in DBPedia
 corpus, queries, qrels = SearchDataLoader(data_path).load(split="test")
 corpus_ids, query_ids = list(corpus), list(queries)

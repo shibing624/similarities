@@ -47,4 +47,4 @@ for q_id, c in res.items():
     print('query:', sentences1[q_id])
     print("search top 3:")
     for corpus_id, s in c.items():
-        print(f'\t{corpus[corpus_id]}: {s:.4f}')
+        print(f'\t{model.corpus[corpus_id]}: {s:.4f}')

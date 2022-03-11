@@ -118,11 +118,10 @@ class LiteralCase(unittest.TestCase):
         """test_word2vec"""
         text1 = '刘若英是个演员'
         text2 = '他唱歌很好听'
-        wm = Word2Vec()
         list_of_corpus = ["This is a test1", "This is a test2", "This is a test3"]
         list_of_corpus2 = ["that is test4", "that is a test5", "that is a test6"]
         zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌', '刘若英是个演员', '演戏很好看的人']
-        m = WordEmbeddingSimilarity(wm, list_of_corpus)
+        m = WordEmbeddingSimilarity(list_of_corpus)
         print(m.similarity(text1, text2))
         print(m.distance(text1, text2))
         m.add_corpus(list_of_corpus2 + zh_list)
