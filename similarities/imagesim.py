@@ -7,22 +7,21 @@ refer: https://colab.research.google.com/drive/1leOzG-AQw5MkzgA4qNW5fb3yc-oJ4Lo4
 Adjust the code to compare similarity score and search.
 """
 
-from typing import List, Union, Tuple
+from typing import List, Union, Dict
 
 import math
 import numpy as np
 from PIL import Image
 from loguru import logger
-from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
-from similarities.similarity import SimilarityABC
+from similarities.similarity import SimilarityABC, Similarity
 from similarities.utils.distance import hamming_distance
 from similarities.utils.imagehash import phash, dhash, whash, average_hash
-from similarities.utils.util import cos_sim, semantic_search, dot_score
+from similarities.clip_model import CLIPModel
 
 
-class ClipSimilarity(SimilarityABC):
+class ClipSimilarity(Similarity):
     """
     Compute CLIP similarity between two images and retrieves most
     similar image for a given image corpus.
@@ -30,39 +29,19 @@ class ClipSimilarity(SimilarityABC):
     CLIP: https://github.com/openai/CLIP.git
     """
 
-    def __init__(self, corpus: List[str] = None, model_name_or_path: str = 'clip-ViT-B-32'):
-        self.corpus = []
-        self.clip_model = SentenceTransformer(model_name_or_path)  # load the CLIP model
-        self.corpus_embeddings = []
-        self.score_functions = {'cos_sim': cos_sim, 'dot': dot_score}
-        if corpus is not None:
-            self.add_corpus(corpus)
-
-    def __len__(self):
-        """Get length of corpus."""
-        return len(self.corpus)
+    def __init__(
+            self,
+            corpus: Union[List[str], Dict[str, str]] = None,
+            model_name_or_path='openai/clip-vit-base-patch32'
+    ):
+        self.clip_model = CLIPModel(model_name_or_path)  # load the CLIP model
+        super().__init__(corpus, self.clip_model)
 
     def __str__(self):
-        base = f"Similarity: {self.__class__.__name__}, matching_model: CLIP"
+        base = f"Similarity: {self.__class__.__name__}, matching_model: {self.clip_model.__class__.__name__}"
         if self.corpus:
             base += f", corpus size: {len(self.corpus)}"
         return base
-
-    def add_corpus(self, corpus: List[str]):
-        """
-        Extend the corpus with new documents.
-
-        Parameters
-        ----------
-        corpus : list of str
-        """
-        self.corpus += corpus
-        corpus_embeddings = self._get_vector(corpus).tolist()
-        if self.corpus_embeddings:
-            self.corpus_embeddings += corpus_embeddings
-        else:
-            self.corpus_embeddings = corpus_embeddings
-        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
 
     def _convert_to_rgb(self, img):
         """Convert image to RGB mode."""
@@ -70,7 +49,7 @@ class ClipSimilarity(SimilarityABC):
             img = img.convert('RGB')
         return img
 
-    def _get_vector(self, img_paths: Union[str, List[str]]):
+    def _get_vector(self, img_paths: Union[str, List[str]], show_progress_bar: bool = False):
         """
         Returns the embeddings for a batch of images.
         :param img_paths:
@@ -80,48 +59,7 @@ class ClipSimilarity(SimilarityABC):
             img_paths = [img_paths]
         imgs = [Image.open(filepath) for filepath in img_paths]
         imgs = [self._convert_to_rgb(img) for img in imgs]
-        return self.clip_model.encode(imgs, batch_size=128, convert_to_tensor=False, show_progress_bar=True)
-
-    def similarity(self, img_paths1: Union[str, List[str]], img_paths2: Union[str, List[str]],
-                   score_function: str = "cos_sim"):
-        """
-        Compute similarity between two image files.
-        :param img_paths1: image file path 1
-        :param img_paths2: image file path 2
-        :return: similarity score
-        """
-        if score_function not in self.score_functions:
-            raise ValueError(f"score function: {score_function} must be either (cos_sim) for cosine similarity"
-                             " or (dot) for dot product")
-        score_function = self.score_functions[score_function]
-        embs1 = self._get_vector(img_paths1)
-        embs2 = self._get_vector(img_paths2)
-
-        return score_function(embs1, embs2)
-
-    def distance(self, img_paths1: Union[str, List[str]], img_paths2: Union[str, List[str]]):
-        """Compute distance between two image files."""
-        return 1.0 - self.similarity(img_paths1, img_paths2)
-
-    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
-        """
-        Find the topn most similar images to the query against the corpus.
-        :param queries: list of str
-        :param topn: int
-        :return: list of each query result tuples (corpus_id, corpus_img_path, similarity_score)
-        """
-        result = []
-        if isinstance(queries, str) or not hasattr(queries, '__len__'):
-            queries = [queries]
-        queries_embeddings = self._get_vector(queries)
-        # Computes the cosine-similarity between the query embedding and all image embeddings.
-        all_hits = semantic_search(queries_embeddings, np.array(self.corpus_embeddings, dtype=np.float32), top_k=topn)
-        for hits in all_hits:
-            q_res = []
-            for hit in hits[0:topn]:
-                q_res.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
-            result.append(q_res)
-        return result
+        return self.clip_model.encode(imgs, batch_size=128, show_progress_bar=show_progress_bar)
 
 
 class ImageHashSimilarity(SimilarityABC):
@@ -132,13 +70,14 @@ class ImageHashSimilarity(SimilarityABC):
     perceptual hash (pHash), which acts as an image fingerprint.
     """
 
-    def __init__(self, corpus: List[str] = None, hash_function: str = "phash", hash_size: int = 16):
-        self.corpus = []
+    def __init__(self, corpus: Union[List[str], Dict[str, str]] = None,
+                 hash_function: str = "phash", hash_size: int = 16):
         self.hash_functions = {'phash': phash, 'dhash': dhash, 'whash': whash, 'average_hash': average_hash}
         if hash_function not in self.hash_functions:
             raise ValueError(f"hash_function: {hash_function} must be one of {self.hash_functions.keys()}")
         self.hash_function = self.hash_functions[hash_function]
         self.hash_size = hash_size
+        self.corpus = {}
         self.corpus_embeddings = []
         if corpus is not None:
             self.add_corpus(corpus)
@@ -153,7 +92,7 @@ class ImageHashSimilarity(SimilarityABC):
             base += f", corpus size: {len(self.corpus)}"
         return base
 
-    def add_corpus(self, corpus: List[str]):
+    def add_corpus(self, corpus: Union[List[str], Dict[str, str]]):
         """
         Extend the corpus with new documents.
 
@@ -161,16 +100,29 @@ class ImageHashSimilarity(SimilarityABC):
         ----------
         corpus : list of str
         """
-        self.corpus += corpus
+        corpus_new = {}
+        start_id = len(self.corpus) if self.corpus else 0
+        if isinstance(corpus, list):
+            corpus = list(set(corpus))
+            for id, doc in enumerate(corpus):
+                if doc not in list(self.corpus.values()):
+                    corpus_new[start_id + id] = doc
+        else:
+            for id, doc in corpus.items():
+                if doc not in list(self.corpus.values()):
+                    corpus_new[id] = doc
+        self.corpus.update(corpus_new)
+        self.corpus_ids_map = {i: id for i, id in enumerate(list(self.corpus.keys()))}
+        logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_embeddings = []
-        for doc_fp in tqdm(corpus, desc="Calculating corpus image hash"):
+        for doc_fp in tqdm(list(corpus_new.values()), desc="Calculating corpus image hash"):
             doc_seq = str(self.hash_function(Image.open(doc_fp), self.hash_size))
             corpus_embeddings.append(doc_seq)
         if self.corpus_embeddings:
             self.corpus_embeddings += corpus_embeddings
         else:
             self.corpus_embeddings = corpus_embeddings
-        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
+        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
     def _sim_score(self, seq1, seq2):
         """Compute hamming similarity between two seqs."""
@@ -200,24 +152,29 @@ class ImageHashSimilarity(SimilarityABC):
         sim_scores = self.similarity(img_paths1, img_paths2)
         return [1.0 - score for score in sim_scores]
 
-    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
+    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """
         Find the topn most similar images to the query against the corpus.
         :param queries: str of list of str, image file paths
         :param topn: int
         :return: list of list tuples (id, image_path, similarity)
         """
-        result = []
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
-        for query in queries:
+        if isinstance(queries, list):
+            queries = {id: query for id, query in enumerate(queries)}
+        result = {qid: {} for qid, query in queries.items()}
+
+        for qid, query in queries.items():
             q_res = []
             q_seq = str(self.hash_function(Image.open(query), self.hash_size))
-            for (corpus_id, doc), doc_seq in zip(enumerate(self.corpus), self.corpus_embeddings):
+            for (corpus_id, doc), doc_seq in zip(self.corpus.items(), self.corpus_embeddings):
                 score = self._sim_score(q_seq, doc_seq)
-                q_res.append((corpus_id, doc, score))
-            q_res.sort(key=lambda x: x[2], reverse=True)
-            result.append(q_res[:topn])
+                q_res.append((corpus_id, score))
+            q_res.sort(key=lambda x: x[1], reverse=True)
+            q_res = q_res[:topn]
+            for corpus_id, score in q_res:
+                result[qid][corpus_id] = score
         return result
 
 
@@ -230,12 +187,12 @@ class SiftSimilarity(SimilarityABC):
     https://blog.csdn.net/zddblog/article/details/7521424
     """
 
-    def __init__(self, corpus: List[str] = None, nfeatures: int = 500):
+    def __init__(self, corpus: Union[List[str], Dict[str, str]] = None, nfeatures: int = 500):
         try:
             import cv2
         except ImportError:
-            raise ImportError("Install cv2 to use SiftSimilarity, e.g. `pip install cv2`")
-        self.corpus = []
+            raise ImportError("Install cv2 to use SiftSimilarity, e.g. `pip install opencv-python`")
+        self.corpus = {}
         self.sift = cv2.SIFT_create(nfeatures=nfeatures)
         self.bf_matcher = cv2.BFMatcher()  # Brute-force matcher create method.
         self.corpus_embeddings = []
@@ -252,7 +209,7 @@ class SiftSimilarity(SimilarityABC):
             base += f", corpus size: {len(self.corpus)}"
         return base
 
-    def add_corpus(self, corpus: List[str]):
+    def add_corpus(self, corpus: Union[List[str], Dict[str, str]]):
         """
         Extend the corpus with new documents.
 
@@ -260,9 +217,22 @@ class SiftSimilarity(SimilarityABC):
         ----------
         corpus : list of str
         """
-        self.corpus += corpus
+        corpus_new = {}
+        start_id = len(self.corpus) if self.corpus else 0
+        if isinstance(corpus, list):
+            corpus = list(set(corpus))
+            for id, doc in enumerate(corpus):
+                if doc not in list(self.corpus.values()):
+                    corpus_new[start_id + id] = doc
+        else:
+            for id, doc in corpus.items():
+                if doc not in list(self.corpus.values()):
+                    corpus_new[id] = doc
+        self.corpus.update(corpus_new)
+        self.corpus_ids_map = {i: id for i, id in enumerate(list(self.corpus.keys()))}
+        logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_embeddings = []
-        for doc_fp in tqdm(corpus, desc="Calculating corpus image SIFT"):
+        for doc_fp in tqdm(list(corpus_new.values()), desc="Calculating corpus image SIFT"):
             img = Image.open(doc_fp)
             _, descriptors = self.calculate_descr(img)
             if len(descriptors.shape) > 0 and descriptors.shape[0] > 0:
@@ -271,7 +241,7 @@ class SiftSimilarity(SimilarityABC):
             self.corpus_embeddings += corpus_embeddings
         else:
             self.corpus_embeddings = corpus_embeddings
-        logger.info(f"Add corpus size: {len(corpus)}, total size: {len(self.corpus)}")
+        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
     @staticmethod
     def _resize_img_to_array(img, max_height=2000, max_width=2000):
@@ -350,22 +320,28 @@ class SiftSimilarity(SimilarityABC):
         sim_scores = self.similarity(img_paths1, img_paths2)
         return [1.0 - score for score in sim_scores]
 
-    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
+    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """
         Find the topn most similar images to the query against the corpus.
         :param queries: str of list of str, image file paths
         :param topn: int
         :return: list of list tuples (id, image_path, similarity)
         """
-        result = []
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
-        for query in queries:
+        if isinstance(queries, list):
+            queries = {id: query for id, query in enumerate(queries)}
+        result = {qid: {} for qid, query in queries.items()}
+
+        for qid, query in queries.items():
             q_res = []
             _, q_desc = self.calculate_descr(Image.open(query))
             for (corpus_id, doc), doc_desc in zip(enumerate(self.corpus), self.corpus_embeddings):
                 score = self._sim_score(q_desc, doc_desc)
-                q_res.append((corpus_id, doc, score))
-            q_res.sort(key=lambda x: x[2], reverse=True)
-            result.append(q_res[:topn])
+                q_res.append((corpus_id, score))
+            q_res.sort(key=lambda x: x[1], reverse=True)
+            q_res = q_res[:topn]
+            for corpus_id, score in q_res:
+                result[qid][corpus_id] = score
+
         return result

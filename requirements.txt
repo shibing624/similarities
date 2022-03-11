@@ -1,5 +1,4 @@
-sentence-transformers>=2.1.0
-text2vec
+text2vec>=1.1.4
 jieba>=0.39
 loguru
 transformers>=4.6.0
@@ -7,3 +6,4 @@ Pillow
 hnswlib
 annoy
 opencv-python
+pytrec_eval

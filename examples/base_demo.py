@@ -19,7 +19,7 @@ corpus = [
     '中央情报局局长访问以色列叙利亚会谈',
     '人在巴基斯坦基地的炸弹袭击中丧生',
 ]
-model = Similarity("shibing624/text2vec-base-chinese")
+model = Similarity(model_name_or_path="shibing624/text2vec-base-chinese")
 print(model)
 similarity_score = model.similarity(sentences[0], sentences[1])
 print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
@@ -35,6 +35,11 @@ for i in range(len(sentences)):
 print('-' * 50 + '\n')
 # 3.Semantic Search
 model.add_corpus(corpus)
+model.add_corpus(corpus)
 res = model.most_similar(queries=sentences, topn=3)
-for q, r in zip(sentences, res):
-    print(f"{q} -> {r}")
+print(res)
+for q_id, c in res.items():
+    print('query:', sentences[q_id])
+    print("search top 3:")
+    for corpus_id, s in c.items():
+        print(f'\t{corpus[corpus_id]}: {s:.4f}')

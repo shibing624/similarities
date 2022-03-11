@@ -3,7 +3,7 @@
 @author:XuMing(xuming624@qq.com)
 @description:
 """
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict
 import os
 from loguru import logger
 from similarities.similarity import Similarity
@@ -15,14 +15,25 @@ class AnnoySimilarity(Similarity):
     similar query for a given docs with Annoy.
     """
 
-    def __init__(self, model_name_or_path="shibing624/text2vec-base-chinese", corpus: List[str] = None,
-                 embedding_size: int = 768, n_trees: int = 256):
-        super().__init__(model_name_or_path, corpus)
+    def __init__(
+            self,
+            corpus: Union[List[str], Dict[str, str]] = None,
+            model_name_or_path="shibing624/text2vec-base-chinese",
+            embedding_size: int = 768,
+            n_trees: int = 256
+    ):
+        super().__init__(corpus, model_name_or_path)
         self.index = None
         self.embedding_size = embedding_size
         self.n_trees = n_trees
         if corpus is not None and self.corpus_embeddings:
             self.build_index()
+
+    def __str__(self):
+        base = f"Similarity: {self.__class__.__name__}, matching_model: {self.sentence_model}"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
 
     def build_index(self):
         """Build Annoy index after add new documents."""
@@ -58,9 +69,9 @@ class AnnoySimilarity(Similarity):
         else:
             logger.warning("No index path given. Index not loaded.")
 
-    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
+    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """Find the topn most similar texts to the query against the corpus."""
-        result = []
+        result = {}
         if self.corpus_embeddings and self.index is None:
             logger.warning(f"No index found. Please add corpus and build index first, e.g. with `build_index()`."
                            f"Now returning slow search result.")
@@ -70,15 +81,17 @@ class AnnoySimilarity(Similarity):
             return result
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
-        queries_embeddings = self._get_vector(queries)
+        if isinstance(queries, list):
+            queries = {id: query for id, query in enumerate(queries)}
+        result = {qid: {} for qid, query in queries.items()}
+        queries_texts = list(queries.values())
+        queries_embeddings = self._get_vector(queries_texts)
         # Annoy get_nns_by_vector can only search for one vector at a time
-        for idx, query in enumerate(queries):
-            q_res = []
+        for idx, (qid, query) in enumerate(queries.items()):
             corpus_ids, distances = self.index.get_nns_by_vector(queries_embeddings[idx], topn, include_distances=True)
-            for id, distance in zip(corpus_ids, distances):
+            for corpus_id, distance in zip(corpus_ids, distances):
                 score = 1 - (distance ** 2) / 2
-                q_res.append((id, self.corpus[id], score))
-            result.append(q_res)
+                result[qid][self.corpus_ids_map[corpus_id]] = score
 
         return result
 
@@ -89,9 +102,13 @@ class HnswlibSimilarity(Similarity):
     similar query for a given docs with Hnswlib.
     """
 
-    def __init__(self, model_name_or_path="shibing624/text2vec-base-chinese", corpus: List[str] = None,
-                 embedding_size: int = 768, ef_construction: int = 400, M: int = 64, ef: int = 50):
-        super().__init__(model_name_or_path, corpus)
+    def __init__(
+            self,
+            corpus: Union[List[str], Dict[str, str]] = None,
+            model_name_or_path="shibing624/text2vec-base-chinese",
+            embedding_size: int = 768, ef_construction: int = 400, M: int = 64, ef: int = 50
+    ):
+        super().__init__(corpus, model_name_or_path)
         self.embedding_size = embedding_size
         self.ef_construction = ef_construction
         self.M = M
@@ -99,6 +116,12 @@ class HnswlibSimilarity(Similarity):
         self.index = None
         if corpus is not None and self.corpus_embeddings:
             self.build_index()
+
+    def __str__(self):
+        base = f"Similarity: {self.__class__.__name__}, matching_model: {self.sentence_model}"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
 
     def build_index(self):
         """Build Hnswlib index after add new documents."""
@@ -139,9 +162,9 @@ class HnswlibSimilarity(Similarity):
         else:
             logger.warning("No index path given. Index not loaded.")
 
-    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
+    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """Find the topn most similar texts to the query against the corpus."""
-        result = []
+        result = {}
         if self.corpus_embeddings and self.index is None:
             logger.warning(f"No index found. Please add corpus and build index first, e.g. with `build_index()`."
                            f"Now returning slow search result.")
@@ -151,16 +174,18 @@ class HnswlibSimilarity(Similarity):
             return result
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
-        queries_embeddings = self._get_vector(queries)
+        if isinstance(queries, list):
+            queries = {id: query for id, query in enumerate(queries)}
+        result = {qid: {} for qid, query in queries.items()}
+        queries_texts = list(queries.values())
+        queries_embeddings = self._get_vector(queries_texts)
         # We use hnswlib knn_query method to find the top_k_hits
         corpus_ids, distances = self.index.knn_query(queries_embeddings, k=topn)
         # We extract corpus ids and scores for each query
-        for idx, query in enumerate(queries):
-            q_res = []
-            hits = [{'corpus_id': id, 'score': 1 - distance} for id, distance in zip(corpus_ids[idx], distances[idx])]
+        for i, (qid, query) in enumerate(queries.items()):
+            hits = [{'corpus_id': id, 'score': 1 - distance} for id, distance in zip(corpus_ids[i], distances[i])]
             hits = sorted(hits, key=lambda x: x['score'], reverse=True)
             for hit in hits:
-                q_res.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
-            result.append(q_res)
+                result[qid][self.corpus_ids_map[hit['corpus_id']]] = hit['score']
 
         return result

@@ -8,12 +8,12 @@ Compute similarity:
 2. Retrieves most similar sentence of a query against a corpus of documents.
 """
 
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict, Any
 
 import os
 import numpy as np
 from loguru import logger
-from sentence_transformers import SentenceTransformer
+from text2vec import SentenceModel
 from similarities.utils.util import cos_sim, semantic_search, dot_score
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -29,17 +29,7 @@ class SimilarityABC:
     to individual corpus documents.
     """
 
-    # def __init__(self, corpus: List[str] = None):
-    #     """
-    #
-    #     Parameters
-    #     ----------
-    #     corpus : list of str
-    #         Corpus of documents.
-    #     """
-    #     raise NotImplementedError("cannot instantiate Abstract Base Class")
-
-    def add_corpus(self, corpus: List[str]):
+    def add_corpus(self, corpus: Union[List[str], Dict[str, str]]):
         """
         Extend the corpus with new documents.
 
@@ -63,12 +53,12 @@ class SimilarityABC:
         """Compute cosine distance between two texts."""
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
-    def most_similar(self, queries: Union[str, List[str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """
         Find the topn most similar texts to the query against the corpus.
-        :param queries: str
+        :param queries: Dict[str(query_id), str(query_text)] or List[str] or str
         :param topn: int
-        :return: list of list of tuples
+        :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
         """
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
@@ -82,20 +72,26 @@ class Similarity(SimilarityABC):
     The index supports adding new documents dynamically.
     """
 
-    def __init__(self, model_name_or_path="shibing624/text2vec-base-chinese", corpus: List[str] = None):
+    def __init__(
+            self,
+            corpus: Union[List[str], Dict[str, str]] = None,
+            model_name_or_path="shibing624/text2vec-base-chinese",
+            max_seq_length=128,
+    ):
         """
         Initialize the similarity object.
         :param model_name_or_path: The name of the model or the path to the matching model.
         :param corpus: Corpus of documents to use for similarity queries.
         """
         if isinstance(model_name_or_path, str):
-            self.sentence_model = SentenceTransformer(model_name_or_path)
+            self.sentence_model = SentenceModel(model_name_or_path, max_seq_length=max_seq_length)
         elif hasattr(model_name_or_path, "encode"):
             self.sentence_model = model_name_or_path
         else:
-            raise ValueError("model_name_or_path is model name of SentenceTransformer or transformers")
+            raise ValueError("model_name_or_path is transformers model name or path")
         self.score_functions = {'cos_sim': cos_sim, 'dot': dot_score}
-        self.corpus = []
+        self.corpus = {}
+        self.corpus_ids_map = {}
         self.corpus_embeddings = []
         if corpus is not None:
             self.add_corpus(corpus)
@@ -110,29 +106,42 @@ class Similarity(SimilarityABC):
             base += f", corpus size: {len(self.corpus)}"
         return base
 
-    def add_corpus(self, corpus: List[str]):
+    def add_corpus(self, corpus: Union[List[str], Dict[str, str]]):
         """
         Extend the corpus with new documents.
 
         Parameters
         ----------
-        corpus : list of str
+        corpus : list of str or dict
         """
-        self.corpus += corpus
-        docs_embeddings = self._get_vector(corpus).tolist()
-        if self.corpus_embeddings:
-            self.corpus_embeddings += docs_embeddings
+        corpus_new = {}
+        start_id = len(self.corpus) if self.corpus else 0
+        if isinstance(corpus, list):
+            corpus = list(set(corpus))
+            for id, doc in enumerate(corpus):
+                if doc not in list(self.corpus.values()):
+                    corpus_new[start_id + id] = doc
         else:
-            self.corpus_embeddings = docs_embeddings
-        logger.info(f"Add docs size: {len(corpus)}, total size: {len(self.corpus)}")
+            for id, doc in corpus.items():
+                if doc not in list(self.corpus.values()):
+                    corpus_new[id] = doc
+        self.corpus.update(corpus_new)
+        self.corpus_ids_map = {i: id for i, id in enumerate(list(self.corpus.keys()))}
+        logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
+        corpus_embeddings = self._get_vector(list(corpus_new.values()), show_progress_bar=True).tolist()
+        if self.corpus_embeddings:
+            self.corpus_embeddings += corpus_embeddings
+        else:
+            self.corpus_embeddings = corpus_embeddings
+        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
-    def _get_vector(self, text: Union[str, List[str]]) -> np.ndarray:
+    def _get_vector(self, text: Union[str, List[str]], show_progress_bar: bool = False) -> np.ndarray:
         """
         Returns the embeddings for a batch of sentences.
         :param text:
         :return:
         """
-        return self.sentence_model.encode(text)
+        return self.sentence_model.encode(text, show_progress_bar=show_progress_bar)
 
     def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]], score_function: str = "cos_sim"):
         """
@@ -155,23 +164,25 @@ class Similarity(SimilarityABC):
         """Compute cosine distance between two texts."""
         return 1 - self.similarity(text1, text2)
 
-    def most_similar(self, queries: Union[str, List[str]], topn: int = 10) -> List[List[Tuple[int, str, float]]]:
+    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """
         Find the topn most similar texts to the queries against the corpus.
         :param queries: str or list of str
         :param topn: int
-        :return: list of each query result tuples (corpus_id, corpus_text, similarity_score)
+        :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
         """
-        result = []
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
-        queries_embeddings = self._get_vector(queries)
-        all_hits = semantic_search(queries_embeddings, np.array(self.corpus_embeddings, dtype=np.float32), top_k=topn)
-        # logger.debug(f"batch_hits: {batch_hits}")
-        for hits in all_hits:
-            q_res = []
+        if isinstance(queries, list):
+            queries = {id: query for id, query in enumerate(queries)}
+        result = {qid: {} for qid, query in queries.items()}
+        queries_ids_map = {i: id for i, id in enumerate(list(queries.keys()))}
+        queries_texts = list(queries.values())
+        queries_embeddings = self._get_vector(queries_texts)
+        corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
+        all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn)
+        for idx, hits in enumerate(all_hits):
             for hit in hits[0:topn]:
-                q_res.append((hit['corpus_id'], self.corpus[hit['corpus_id']], hit['score']))
-            result.append(q_res)
+                result[queries_ids_map[idx]][self.corpus_ids_map[hit['corpus_id']]] = hit['score']
 
         return result

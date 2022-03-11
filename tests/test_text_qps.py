@@ -9,7 +9,6 @@ import unittest
 from time import time
 
 sys.path.append('..')
-from similarities import Similarity, HnswlibSimilarity, SimHashSimilarity
 from similarities import *
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
@@ -37,7 +36,7 @@ sents1, sents2, labels = load_test_data(sts_test_path)
 class QPSSimTestCase(unittest.TestCase):
     def test_sim_speed(self):
         """test_sim_speed"""
-        m = Similarity('shibing624/text2vec-base-chinese')
+        m = Similarity()
         t1 = time()
         r = m.similarity(sents1, sents2)
         print(r[:10])

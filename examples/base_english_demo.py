@@ -18,7 +18,7 @@ sentences2 = ['The dog plays in the garden',
               'A woman watches TV',
               'The new movie is so great']
 
-model = Similarity("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+model = Similarity(model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 # 使用的是多语言文本匹配模型
 scores = model.similarity(sentences1, sentences2)
 print('1:use Similarity compute cos scores\n')
@@ -42,5 +42,9 @@ corpus = [
 
 model.add_corpus(corpus)
 res = model.most_similar(queries=sentences1, topn=3)
-for q, r in zip(sentences1, res):
-    print(f"{q} -> {r}")
+print(res)
+for q_id, c in res.items():
+    print('query:', sentences1[q_id])
+    print("search top 3:")
+    for corpus_id, s in c.items():
+        print(f'\t{corpus[corpus_id]}: {s:.4f}')
