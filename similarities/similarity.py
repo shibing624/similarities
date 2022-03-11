@@ -40,17 +40,17 @@ class SimilarityABC:
         """
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
-    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """
         Compute similarity between two texts.
-        :param text1: list of str or str
-        :param text2: list of str or str
+        :param a: list of str or str
+        :param b: list of str or str
         :param score_function: function to compute similarity, default cos_sim
         :return: similarity score, torch.Tensor, Matrix with res[i][j] = cos_sim(a[i], b[j])
         """
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
-    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """Compute cosine distance between two texts."""
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
@@ -136,19 +136,19 @@ class Similarity(SimilarityABC):
             self.corpus_embeddings = corpus_embeddings
         logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
-    def _get_vector(self, text: Union[str, List[str]], show_progress_bar: bool = False) -> np.ndarray:
+    def _get_vector(self, sentences: Union[str, List[str]], show_progress_bar: bool = False) -> np.ndarray:
         """
         Returns the embeddings for a batch of sentences.
-        :param text:
+        :param sentences:
         :return:
         """
-        return self.sentence_model.encode(text, show_progress_bar=show_progress_bar)
+        return self.sentence_model.encode(sentences, show_progress_bar=show_progress_bar)
 
-    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]], score_function: str = "cos_sim"):
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]], score_function: str = "cos_sim"):
         """
         Compute similarity between two texts.
-        :param text1: list of str or str
-        :param text2: list of str or str
+        :param a: list of str or str
+        :param b: list of str or str
         :param score_function: function to compute similarity, default cos_sim
         :return: similarity score, torch.Tensor, Matrix with res[i][j] = cos_sim(a[i], b[j])
         """
@@ -156,14 +156,14 @@ class Similarity(SimilarityABC):
             raise ValueError(f"score function: {score_function} must be either (cos_sim) for cosine similarity"
                              " or (dot) for dot product")
         score_function = self.score_functions[score_function]
-        text_emb1 = self._get_vector(text1)
-        text_emb2 = self._get_vector(text2)
+        text_emb1 = self._get_vector(a)
+        text_emb2 = self._get_vector(b)
 
         return score_function(text_emb1, text_emb2)
 
-    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """Compute cosine distance between two texts."""
-        return 1 - self.similarity(text1, text2)
+        return 1 - self.similarity(a, b)
 
     def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """

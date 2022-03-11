@@ -83,13 +83,13 @@ class SimHashSimilarity(SimilarityABC):
             self.corpus_embeddings = corpus_embeddings
         logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
-    def simhash(self, text: str):
+    def simhash(self, sentence: str):
         """
         Compute SimHash for a given text.
-        :param text: str
+        :param sentence: str
         :return: hash code
         """
-        seg = jieba.cut(text)
+        seg = jieba.cut(sentence)
         key_word = jieba.analyse.extract_tags('|'.join(seg), topK=None, withWeight=True, allowPOS=())
         # 先按照权重排序，再按照词排序
         key_list = []
@@ -119,48 +119,48 @@ class SimHashSimilarity(SimilarityABC):
         # 将距离转化为相似度
         score = 0.0
         if len(seq1) > 2 and len(seq2) > 2:
-            score = 1.0 - hamming_distance(seq1, seq2) / len(seq1)
+            score = 1 - hamming_distance(seq1, seq2) / len(seq1)
         return score
 
-    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """
         Compute hamming similarity between two sentences.
 
         Parameters
         ----------
-        text1 : str or list of str
-        text2 : str or list of str
+        a : str or list of str
+        b : str or list of str
 
         Returns
         -------
         list of float
         """
-        if isinstance(text1, str):
-            text1 = [text1]
-        if isinstance(text2, str):
-            text2 = [text2]
-        if len(text1) != len(text2):
+        if isinstance(a, str):
+            a = [a]
+        if isinstance(b, str):
+            b = [b]
+        if len(a) != len(b):
             raise ValueError("expected two inputs of the same length")
-        seqs1 = [self.simhash(text) for text in text1]
-        seqs2 = [self.simhash(text) for text in text2]
+        seqs1 = [self.simhash(text) for text in a]
+        seqs2 = [self.simhash(text) for text in b]
         scores = [self._sim_score(seq1, seq2) for seq1, seq2 in zip(seqs1, seqs2)]
         return scores
 
-    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """
         Compute hamming distance between two sentences.
 
         Parameters
         ----------
-        text1 : str or list of str
-        text2 : str or list of str
+        a : str or list of str
+        b : str or list of str
 
         Returns
         -------
         list of float
         """
-        sim_scores = self.similarity(text1, text2)
-        return [1.0 - score for score in sim_scores]
+        sim_scores = self.similarity(a, b)
+        return [1 - score for score in sim_scores]
 
     def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """
@@ -246,24 +246,24 @@ class TfidfSimilarity(SimilarityABC):
             self.corpus_embeddings = corpus_embeddings
         logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
-    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """
         Compute cosine similarity score between two sentences.
-        :param text1:
-        :param text2:
+        :param a:
+        :param b:
         :return:
         """
-        if isinstance(text1, str):
-            text1 = [text1]
-        if isinstance(text2, str):
-            text2 = [text2]
-        features1 = [self.tfidf.get_tfidf(text) for text in text1]
-        features2 = [self.tfidf.get_tfidf(text) for text in text2]
+        if isinstance(a, str):
+            a = [a]
+        if isinstance(b, str):
+            b = [b]
+        features1 = [self.tfidf.get_tfidf(text) for text in a]
+        features2 = [self.tfidf.get_tfidf(text) for text in b]
         return cos_sim(np.array(features1), np.array(features2))
 
-    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """Compute cosine distance between two keys."""
-        return 1.0 - self.similarity(text1, text2)
+        return 1 - self.similarity(a, b)
 
     def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """Find the topn most similar texts to the query against the corpus."""
@@ -432,15 +432,15 @@ class WordEmbeddingSimilarity(SimilarityABC):
     def _get_vector(self, text, show_progress_bar: bool = False) -> np.ndarray:
         return self.keyedvectors.encode(text, show_progress_bar=show_progress_bar)
 
-    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """Compute cosine similarity between two texts."""
-        v1 = self._get_vector(text1)
-        v2 = self._get_vector(text2)
+        v1 = self._get_vector(a)
+        v2 = self._get_vector(b)
         return cos_sim(v1, v2)
 
-    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """Compute cosine distance between two texts."""
-        return 1 - self.similarity(text1, text2)
+        return 1 - self.similarity(a, b)
 
     def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """
@@ -570,18 +570,18 @@ class CilinSimilarity(SimilarityABC):
                     score += 1
         return score / 10
 
-    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """
         Compute Cilin similarity between two texts.
-        :param text1:
-        :param text2:
+        :param a:
+        :param b:
         :return:
         """
-        if isinstance(text1, str):
-            text1 = [text1]
-        if isinstance(text2, str):
-            text2 = [text2]
-        if len(text1) != len(text2):
+        if isinstance(a, str):
+            a = [a]
+        if isinstance(b, str):
+            b = [b]
+        if len(a) != len(b):
             raise ValueError("expected two inputs of the same length")
 
         def calc_pair_sim(sentence1, sentence2):
@@ -598,11 +598,11 @@ class CilinSimilarity(SimilarityABC):
             similarity_score = max(sum(score_words1) / len(words1), sum(score_words2) / len(words2))
             return similarity_score
 
-        return [calc_pair_sim(sentence1, sentence2) for sentence1, sentence2 in zip(text1, text2)]
+        return [calc_pair_sim(sentence1, sentence2) for sentence1, sentence2 in zip(a, b)]
 
-    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """Compute cosine distance between two texts."""
-        return [1.0 - s for s in self.similarity(text1, text2)]
+        return [1 - s for s in self.similarity(a, b)]
 
     def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """Find the topn most similar texts to the query against the corpus."""
@@ -700,18 +700,18 @@ class HownetSimilarity(SimilarityABC):
         else:
             return 0
 
-    def similarity(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """
         Computer Hownet similarity between two texts.
-        :param text1:
-        :param text2:
+        :param a:
+        :param b:
         :return:
         """
-        if isinstance(text1, str):
-            text1 = [text1]
-        if isinstance(text2, str):
-            text2 = [text2]
-        if len(text1) != len(text2):
+        if isinstance(a, str):
+            a = [a]
+        if isinstance(b, str):
+            b = [b]
+        if len(a) != len(b):
             raise ValueError("expected two inputs of the same length")
 
         def calc_pair_sim(sentence1, sentence2):
@@ -728,11 +728,11 @@ class HownetSimilarity(SimilarityABC):
             similarity_score = max(sum(score_words1) / len(words1), sum(score_words2) / len(words2))
             return similarity_score
 
-        return [calc_pair_sim(sentence1, sentence2) for sentence1, sentence2 in zip(text1, text2)]
+        return [calc_pair_sim(sentence1, sentence2) for sentence1, sentence2 in zip(a, b)]
 
-    def distance(self, text1: Union[str, List[str]], text2: Union[str, List[str]]):
+    def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """Compute Hownet distance between two keys."""
-        return [1.0 - s for s in self.similarity(text1, text2)]
+        return [1 - s for s in self.similarity(a, b)]
 
     def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
         """Find the topn most similar texts to the query against the corpus."""

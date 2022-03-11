@@ -91,21 +91,22 @@ class CLIPModel(nn.Module):
     @staticmethod
     def load(input_path: str):
         return CLIPModel(model_name=input_path)
-    def _text_length(self, text: Union[List[int], List[List[int]]]):
+
+    def _text_length(self, text):
         """
         Help function to get the length for the input text. Text can be either
         a list of ints (which means a single text as input), or a tuple of list of ints
         (representing several text inputs to the model).
         """
 
-        if isinstance(text, dict):              #{key: value} case
+        if isinstance(text, dict):  # {key: value} case
             return len(next(iter(text.values())))
-        elif not hasattr(text, '__len__'):      #Object has no len() method
+        elif not hasattr(text, '__len__'):  # Object has no len() method
             return 1
-        elif len(text) == 0 or isinstance(text[0], int):    #Empty string or list of ints
+        elif len(text) == 0 or isinstance(text[0], int):  # Empty string or list of ints
             return len(text)
         else:
-            return sum([len(t) for t in text])      #Sum of length of individual strings
+            return sum([len(t) for t in text])  # Sum of length of individual strings
 
     @staticmethod
     def batch_to_device(batch):
@@ -117,7 +118,6 @@ class CLIPModel(nn.Module):
                 batch[key] = batch[key].to(device)
         return batch
 
-
     def encode(
             self,
             sentences: Union[str, List[str]],
@@ -127,7 +127,7 @@ class CLIPModel(nn.Module):
             normalize_embeddings: bool = False
     ):
         """
-        Computes sentence embeddings
+        Computes sentence and images embeddings
 
         :param sentences: the sentences to embed
         :param batch_size: the batch size used for the computation

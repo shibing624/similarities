@@ -53,9 +53,8 @@ data_path = get_scifact()
 #### Loading test queries and corpus in DBPedia
 corpus, queries, qrels = SearchDataLoader(data_path).load(split="test")
 corpus_ids, query_ids = list(corpus), list(queries)
-print(len(corpus))
-print(len(queries))
-print(len(qrels))
+logger.info(f"corpus: {len(corpus)}, queries: {len(queries)}")
+
 #### Randomly sample 1M pairs from Original Corpus (4.63M pairs) 
 #### First include all relevant documents (i.e. present in qrels)
 corpus_set = set()
@@ -66,7 +65,7 @@ corpus_new = {corpus_id: corpus[corpus_id] for corpus_id in corpus_set}
 #### Remove already seen k relevant documents and sample (1M - k) docs randomly
 remaining_corpus = list(set(corpus_ids) - corpus_set)
 sample = min(1000000 - len(corpus_set), len(remaining_corpus))
-sample = 10
+# sample = 10
 
 for corpus_id in random.sample(remaining_corpus, sample):
     corpus_new[corpus_id] = corpus[corpus_id]
@@ -110,4 +109,4 @@ logger.info(f"Results size: {len(results)}")
 
 #### Evaluate your retrieval using NDCG@k, MAP@K ...
 ndcg, _map, recall, precision = evaluate(qrels, results)
-print(ndcg, _map, recall, precision)
+logger.info(f"MAP: {_map}")
