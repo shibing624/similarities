@@ -46,7 +46,7 @@ setup(
         "jieba>=0.39",
         "loguru",
         "Pillow",
-        'pytrec_eval',
+        # 'pytrec_eval',
         # "hnswlib",
         # "opencv-python",
     ],

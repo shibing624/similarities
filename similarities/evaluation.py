@@ -2,9 +2,9 @@
 """
 refer: https://github.com/UKPLab/beir/blob/main/beir/datasets/data_loader.py
 """
-import pytrec_eval
+from typing import List, Dict, Tuple
+
 from loguru import logger
-from typing import Type, List, Dict, Union, Tuple
 
 
 def mrr(qrels: Dict[str, Dict[str, int]],
@@ -127,6 +127,11 @@ def evaluate(
         results: Dict[str, Dict[str, float]],
         k_values: List[int] = (1, 3, 5, 10, 100)) -> Tuple[
     Dict[str, float], Dict[str, float], Dict[str, float], Dict[str, float]]:
+    try:
+        import pytrec_eval
+    except ImportError:
+        raise ImportError("Please install pytrec_eval to use this function, eg. `pip install pytrec_eval`")
+
     ndcg = {}
     _map = {}
     recall = {}
