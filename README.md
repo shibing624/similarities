@@ -330,7 +330,7 @@ data/image1.png vs a tiger, score: 0.2959
 APA:
 
 ```
-Xu, M. Similarities: Compute similarity score for humans (Version 0.0.4) [Computer software]. https://github.com/shibing624/similarities
+Xu, M. Similarities: Compute similarity score for humans (Version 1.0.1) [Computer software]. https://github.com/shibing624/similarities
 ```
 
 BibTeX:
@@ -340,7 +340,7 @@ BibTeX:
 author = {Xu, Ming},
 title = {Similarities: similarity calculation and semantic search toolkit},
 url = {https://github.com/shibing624/similarities},
-version = {0.0.4}
+version = {1.0.1}
 }
 ```
 
