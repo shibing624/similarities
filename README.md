@@ -26,11 +26,39 @@ similarities：相似度计算、语义匹配搜索工具包。
 
 # Feature
 
-### 文本相似度比较方法
-
+### 文本相似度计算
 - 余弦相似（Cosine Similarity）：两向量求余弦
 - 点积（Dot Product）：两向量归一化后求内积
-- [RankBM25](similarities/literalsim.py)：BM25的变种算法，对query和文档之间的相似度打分，得到docs的rank排序
+- 汉明距离（Hamming Distance），编辑距离（Levenshtein Distance），欧氏距离（Euclidean Distance），曼哈顿距离（Manhattan Distance）等
+
+#### 语义模型
+- BERT模型（文本向量表征）
+- SentenceBERT文本匹配模型
+- CoSENT文本匹配模型
+
+#### 字面模型
+- Word2Vec文本浅层语义表征
+- 同义词词林
+- 知网Hownet义原匹配
+- BM25、RankBM25
+- TFIDF
+- SimHash
+
+### 图像相似度计算
+#### 语义模型
+- [CLIP(Contrastive Language-Image Pre-Training)](similarities/imagesim.py)
+- VGG(doing)
+- ResNet(doing)
+
+#### 特征提取
+- pHash, dHash, wHash, aHash
+- SIFT, Scale Invariant Feature Transform(SIFT)
+- SURF, Speeded Up Robust Features(SURF)(doing)
+
+### 图文相似度计算
+- [CLIP(Contrastive Language-Image Pre-Training)](similarities/imagesim.py)
+
+### 匹配搜索
 - [SemanticSearch](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L99)：向量相似检索，使用Cosine
   Similarty + topk高效计算，比一对一暴力计算快一个数量级
 
@@ -364,3 +392,4 @@ version = {1.0.1}
 - [shibing624/text2vec](https://github.com/shibing624/text2vec)
 - [qwertyforce/image_search](https://github.com/qwertyforce/image_search)
 - [ImageHash - Official Github repository](https://github.com/JohannesBuchner/imagehash)
+- [openai/CLIP](https://github.com/openai/CLIP)

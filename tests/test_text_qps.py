@@ -144,17 +144,18 @@ class QPSSimTestCase(unittest.TestCase):
         b = sents2[:100]
         r = m.similarity(a, b)
         for i in range(len(a)):
-            print(r[i][i], labels[i])
+            print(r[i], labels[i])
         spend_time = time() - t1
         print('[sim] spend time:', spend_time, ' seconds, count:', len(a), ', qps:', len(a) / spend_time)
         m.add_corpus(sents2)
         t1 = time()
-        size = 100
+        size = 20
         r = m.most_similar(sents1[:size], topn=5)
         # print(r)
         spend_time = time() - t1
         print('[search] spend time:', spend_time, ' seconds, count:', size, ', qps:', size / spend_time)
         self.assertTrue(len(r) > 0)
+
 
 if __name__ == '__main__':
     unittest.main()
