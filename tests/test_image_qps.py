@@ -8,14 +8,14 @@ import sys
 import unittest
 from time import time
 from glob import glob
-
+from PIL import Image
 sys.path.append('..')
-from similarities import *
+from similarities import ClipSimilarity, ImageHashSimilarity
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
-img_dir = os.path.join(pwd_path, '../examples/data/')
+image_dir = os.path.join(pwd_path, '../examples/data/')
 
-imgs = glob(f'{img_dir}/*.png')
+imgs = [Image.open(i) for i in glob(os.path.join(image_dir, '*.png'))]
 
 
 class QPSImageTestCase(unittest.TestCase):

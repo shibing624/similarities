@@ -4,7 +4,6 @@
 @description: 
 """
 
-import os
 import sys
 import unittest
 
@@ -12,9 +11,8 @@ sys.path.append('..')
 
 from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Similarity, WordEmbeddingSimilarity, \
     CilinSimilarity, HownetSimilarity
-from text2vec import Word2Vec
 
-from similarities.utils.distance import string_hash, hamming_distance, cosine_distance
+from similarities.utils.distance import hamming_distance
 
 
 class LiteralCase(unittest.TestCase):
