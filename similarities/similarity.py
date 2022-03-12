@@ -81,7 +81,8 @@ class Similarity(SimilarityABC):
     ):
         """
         Initialize the similarity object.
-        :param model_name_or_path: The name of the model or the path to the matching model.
+        :param model_name_or_path: bert model name or path, can be: ['bert-base-uncased', 'bert-base-chinese', ...]
+            default "shibing624/text2vec-base-chinese", refer: https://github.com/shibing624/text2vec
         :param corpus: Corpus of documents to use for similarity queries.
         """
         if isinstance(model_name_or_path, str):

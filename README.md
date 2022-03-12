@@ -32,12 +32,13 @@ similarities：相似度计算、语义匹配搜索工具包。
 - 汉明距离（Hamming Distance），编辑距离（Levenshtein Distance），欧氏距离（Euclidean Distance），曼哈顿距离（Manhattan Distance）等
 
 #### 语义模型
+- [CoSENT文本匹配模型](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L79)[推荐]
 - BERT模型（文本向量表征）
 - SentenceBERT文本匹配模型
-- CoSENT文本匹配模型
+
 
 #### 字面模型
-- Word2Vec文本浅层语义表征
+- [Word2Vec文本浅层语义表征](https://github.com/shibing624/similarities/blob/main/similarities/literalsim.py#L374)[推荐]
 - 同义词词林
 - 知网Hownet义原匹配
 - BM25、RankBM25
@@ -46,20 +47,20 @@ similarities：相似度计算、语义匹配搜索工具包。
 
 ### 图像相似度计算
 #### 语义模型
-- [CLIP(Contrastive Language-Image Pre-Training)](similarities/imagesim.py)
+- [CLIP(Contrastive Language-Image Pre-Training)](https://github.com/shibing624/similarities/blob/main/similarities/imagesim.py#L25)
 - VGG(doing)
 - ResNet(doing)
 
 #### 特征提取
-- pHash, dHash, wHash, aHash
+- [pHash](https://github.com/shibing624/similarities/blob/main/similarities/imagesim.py#L164)[推荐], dHash, wHash, aHash
 - SIFT, Scale Invariant Feature Transform(SIFT)
 - SURF, Speeded Up Robust Features(SURF)(doing)
 
 ### 图文相似度计算
-- [CLIP(Contrastive Language-Image Pre-Training)](similarities/imagesim.py)
+- [CLIP(Contrastive Language-Image Pre-Training)](https://github.com/shibing624/similarities/blob/main/similarities/imagesim.py#L25)
 
 ### 匹配搜索
-- [SemanticSearch](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L99)：向量相似检索，使用Cosine
+- [SemanticSearch](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L185)：向量相似检索，使用Cosine
   Similarty + topk高效计算，比一对一暴力计算快一个数量级
 
 # Demo
