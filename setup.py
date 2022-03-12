@@ -41,14 +41,15 @@ setup(
     ],
     keywords='similarities,Chinese Text Similarity Calculation Tool,similarity,word2vec',
     install_requires=[
-        "text2vec>=1.1.4",
+        "text2vec>=1.1.5",
         "transformers>=4.6.0",
         "jieba>=0.39",
         "loguru",
         "Pillow",
-        # 'pytrec_eval',
-        # "hnswlib",
+        'pytrec_eval',
+        "hnswlib",
         # "opencv-python",
+        # "annoy",
     ],
     packages=find_packages(),
 )

@@ -1,4 +1,4 @@
-text2vec>=1.1.4
+text2vec>=1.1.5
 jieba>=0.39
 loguru
 transformers>=4.6.0
