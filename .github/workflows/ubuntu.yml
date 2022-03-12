@@ -1,0 +1,52 @@
+on:
+  workflow_dispatch: # Manually running a workflow
+name: Linux build
+jobs:
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        #python-version: [ 3.7, 3.8, 3.9 ]
+        python-version: [ 3.9 ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache pip
+        uses: actions/cache@v2
+        if: startsWith(runner.os, 'Linux')
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - name: Cache huggingface models
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/huggingface
+          key: ${{ runner.os }}-huggingface-
+      - name: Cache text2vec models
+        uses: actions/cache@v2
+        with:
+          path: ~/.text2vec
+          key: ${{ runner.os }}-text2vec-
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install torch
+        run: |
+          python -m pip install --upgrade pip
+          pip install Cython
+          pip install torch
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install .
+      - name: PKG-TEST
+        run: |
+          python -m unittest discover tests/
+      - name: Install from pypi
+        run: |
+          pip uninstall -y similarities
+          pip install -U similarities
+          python -c "import similarities; print(similarities.__version__)"
