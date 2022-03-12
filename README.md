@@ -64,9 +64,9 @@ python3 setup.py install
 ```python
 from similarities import Similarity
 
-m = Similarity("shibing624/text2vec-base-chinese")
+m = Similarity()
 r = m.similarity('如何更换花呗绑定银行卡', '花呗更改绑定银行卡')
-print(f"similarity score: {r:.4f}")  # similarity score: 0.8551
+print(f"similarity score: {float(r)}")  # similarity score: 0.855146050453186
 ```
 
 > 余弦值`score`范围是[-1, 1]，值越大越相似。
@@ -94,11 +94,12 @@ corpus = [
     '中央情报局局长访问以色列叙利亚会谈',
     '人在巴基斯坦基地的炸弹袭击中丧生',
 ]
-model = Similarity("shibing624/text2vec-base-chinese")
+model = Similarity(model_name_or_path="shibing624/text2vec-base-chinese")
 print(model)
 similarity_score = model.similarity(sentences[0], sentences[1])
 print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
 
+print('-' * 50 + '\n')
 # 2.Compute similarity between two list
 similarity_scores = model.similarity(sentences, corpus)
 print(similarity_scores.numpy())
@@ -106,12 +107,16 @@ for i in range(len(sentences)):
     for j in range(len(corpus)):
         print(f"{sentences[i]} vs {corpus[j]}, score: {similarity_scores.numpy()[i][j]:.4f}")
 
+print('-' * 50 + '\n')
 # 3.Semantic Search
 model.add_corpus(corpus)
-q = '如何更换花呗绑定银行卡'
-print("query:", q)
-for i in model.most_similar(q, topn=5):
-    print('\t', i)
+res = model.most_similar(queries=sentences, topn=3)
+print(res)
+for q_id, c in res.items():
+    print('query:', sentences[q_id])
+    print("search top 3:")
+    for corpus_id, s in c.items():
+        print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
 ```
 
 output:
@@ -134,11 +139,10 @@ output:
 花呗更改绑定银行卡 vs 人在巴基斯坦基地的炸弹袭击中丧生, score: 0.1279
 
 query: 如何更换花呗绑定银行卡
-	 (0, '花呗更改绑定银行卡', 0.8551459908485413)
-	 (1, '我什么时候开通了花呗', 0.721195638179779)
-	 (4, '中央情报局局长访问以色列叙利亚会谈', 0.2517135739326477)
-	 (3, '暴风雨掩埋了东北部；新泽西16英寸的降雪', 0.21666759252548218)
-	 (2, '俄罗斯警告乌克兰反对欧盟协议', 0.1450251191854477)
+search top 3:
+	花呗更改绑定银行卡: 0.8551
+	我什么时候开通了花呗: 0.7212
+	中央情报局局长访问以色列叙利亚会谈: 0.2517
 ```
 
 > 余弦`score`的值范围[-1, 1]，值越大，表示该query与corpus的文本越相似。
@@ -167,12 +171,30 @@ from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Simi
 text1 = "如何更换花呗绑定银行卡"
 text2 = "花呗更改绑定银行卡"
 
+corpus = [
+    '花呗更改绑定银行卡',
+    '我什么时候开通了花呗',
+    '俄罗斯警告乌克兰反对欧盟协议',
+    '暴风雨掩埋了东北部；新泽西16英寸的降雪',
+    '中央情报局局长访问以色列叙利亚会谈',
+    '人在巴基斯坦基地的炸弹袭击中丧生',
+]
+
+queries = [
+    '我的花呗开通了？',
+    '乌克兰被俄罗斯警告'
+]
 m = TfidfSimilarity()
 print(text1, text2, ' sim score: ', m.similarity(text1, text2))
 
-zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌', '我不是演员吗']
-m.add_corpus(zh_list)
-print(m.most_similar('刘若英是演员'))
+m.add_corpus(corpus)
+res = m.most_similar(queries, topn=3)
+print('sim search: ', res)
+for q_id, c in res.items():
+    print('query:', queries[q_id])
+    print("search top 3:")
+    for corpus_id, s in c.items():
+        print(f'\t{m.corpus[corpus_id]}: {s:.4f}')
 ```
 
 output:
@@ -180,7 +202,13 @@ output:
 ```shell
 如何更换花呗绑定银行卡 花呗更改绑定银行卡  sim score:  0.8203384355246909
 
-[(0, '刘若英是个演员', 0.9847577834309504), (3, '我不是演员吗', 0.7056381915655814), (1, '他唱歌很好听', 0.5), (2, 'women喜欢这首歌', 0.5)]
+sim search:  {0: {2: 0.9999999403953552, 1: 0.43930041790008545, 0: 0.0}, 1: {0: 0.7380483150482178, 1: 0.0, 2: 0.0}}
+query: 我的花呗开通了？
+search top 3:
+	我什么时候开通了花呗: 1.0000
+	花呗更改绑定银行卡: 0.4393
+	俄罗斯警告乌克兰反对欧盟协议: 0.0000
+...
 ```
 
 ### 5. 图像相似度计算和匹配搜索
@@ -192,30 +220,99 @@ example: [examples/image_demo.py](./examples/image_demo.py)
 ```python
 import sys
 import glob
+from PIL import Image
 
 sys.path.append('..')
 from similarities.imagesim import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
 
-image_fp1 = 'data/image1.png'
-image_fp2 = 'data/image12-like-image1.png'
-m = ClipSimilarity()
-print(m)
-print(m.similarity(image_fp1, image_fp2))
-# add corpus
-m.add_corpus(glob.glob('data/*.jpg') + glob.glob('data/*.png'))
-r = m.most_similar(image_fp1)
-print(r)
+
+def sim_and_search(m):
+    print(m)
+    # similarity
+    sim_scores = m.similarity(imgs1, imgs2)
+    print('sim scores: ', sim_scores)
+    for (idx, i), j in zip(enumerate(image_fps1), image_fps2):
+        s = sim_scores[idx] if isinstance(sim_scores, list) else sim_scores[idx][idx]
+        print(f"{i} vs {j}, score: {s:.4f}")
+    # search
+    m.add_corpus(corpus_imgs)
+    queries = imgs1
+    res = m.most_similar(queries, topn=3)
+    print('sim search: ', res)
+    for q_id, c in res.items():
+        print('query:', image_fps1[q_id])
+        print("search top 3:")
+        for corpus_id, s in c.items():
+            print(f'\t{m.corpus[corpus_id].filename}: {s:.4f}')
+    print('-' * 50 + '\n')
+
+image_fps1 = ['data/image1.png', 'data/image3.png']
+image_fps2 = ['data/image12-like-image1.png', 'data/image10.png']
+imgs1 = [Image.open(i) for i in image_fps1]
+imgs2 = [Image.open(i) for i in image_fps2]
+corpus_fps = glob.glob('data/*.jpg') + glob.glob('data/*.png')
+corpus_imgs = [Image.open(i) for i in corpus_fps]
+
+# 2. image and image similarity score
+sim_and_search(ClipSimilarity())  # the best result
+sim_and_search(ImageHashSimilarity(hash_function='phash'))
+sim_and_search(SiftSimilarity())
 ```
 
 output:
 
 ```shell
-0.9579
+Similarity: ClipSimilarity, matching_model: CLIPModel
+sim scores:  tensor([[0.9580, 0.8654],
+        [0.6558, 0.6145]])
 
-[(6, 'data/image1.png', 1.0), (0, 'data/image12-like-image1.png', 0.9579654335975647), (4, 'data/image8-like-image1.png', 0.9326782822608948), ... ]
+data/image1.png vs data/image12-like-image1.png, score: 0.9580
+data/image3.png vs data/image10.png, score: 0.6145
+
+sim search:  {0: {6: 0.9999999403953552, 0: 0.9579654932022095, 4: 0.9326782822608948}, 1: {8: 0.9999997615814209, 4: 0.6729235649108887, 0: 0.6558331847190857}}
+
+query: data/image1.png
+search top 3:
+	data/image1.png: 1.0000
+	data/image12-like-image1.png: 0.9580
+	data/image8-like-image1.png: 0.9327
 ```
 
 ![image_sim](docs/image_sim.png)
+
+### 6. 图文互搜
+
+CLIP 模型不仅支持以图搜图，还支持图文互搜：
+```python
+import sys
+import glob
+from PIL import Image
+sys.path.append('..')
+from similarities.imagesim import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
+
+m = ClipSimilarity()
+print(m)
+# similarity score between text and image
+image_fps = ['data/image3.png',  # yellow flower image
+             'data/image1.png']  # tiger image
+texts = ['a yellow flower', 'a tiger']
+imgs = [Image.open(i) for i in image_fps]
+sim_scores = m.similarity(imgs, texts)
+
+print('sim scores: ', sim_scores)
+for (idx, i), j in zip(enumerate(image_fps), texts):
+    s = sim_scores[idx][idx]
+    print(f"{i} vs {j}, score: {s:.4f}")
+```
+
+output:
+
+```shell
+sim scores:  tensor([[0.3220, 0.2409],
+        [0.1677, 0.2959]])
+data/image3.png vs a yellow flower, score: 0.3220
+data/image1.png vs a tiger, score: 0.2959
+```
 
 # Contact
 

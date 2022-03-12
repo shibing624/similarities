@@ -7,8 +7,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        #python-version: [ 3.7, 3.8, 3.9 ]
-        python-version: [ 3.9 ]
+        python-version: [ 3.7, 3.8, 3.9 ]
+#        python-version: [ 3.9 ]
     steps:
       - uses: actions/checkout@v2
       - name: Cache pip
@@ -38,6 +38,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install Cython
           pip install torch
+      - name: Install from pypi
+        run: |
+          pip install -U similarities
+          python -c "import similarities; print(similarities.__version__)"
+          pip uninstall -y similarities
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
@@ -45,8 +50,3 @@ jobs:
       - name: PKG-TEST
         run: |
           python -m unittest discover tests/
-      - name: Install from pypi
-        run: |
-          pip uninstall -y similarities
-          pip install -U similarities
-          python -c "import similarities; print(similarities.__version__)"

@@ -35,7 +35,6 @@ for i in range(len(sentences)):
 print('-' * 50 + '\n')
 # 3.Semantic Search
 model.add_corpus(corpus)
-model.add_corpus(corpus)
 res = model.most_similar(queries=sentences, topn=3)
 print(res)
 for q_id, c in res.items():
