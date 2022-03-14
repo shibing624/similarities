@@ -18,15 +18,15 @@ similarities：相似度计算、语义匹配搜索工具包。
 **Guide**
 
 - [Feature](#Feature)
+- [Evaluation](#Evaluation)
 - [Install](#install)
 - [Usage](#usage)
 - [Contact](#Contact)
-- [Citation](#Citation)
 - [Reference](#reference)
 
 # Feature
 
-### 文本相似度计算
+### 文本相似度计算（文本匹配）
 - 余弦相似（Cosine Similarity）：两向量求余弦
 - 点积（Dot Product）：两向量归一化后求内积
 - 汉明距离（Hamming Distance），编辑距离（Levenshtein Distance），欧氏距离（Euclidean Distance），曼哈顿距离（Manhattan Distance）等
@@ -45,7 +45,7 @@ similarities：相似度计算、语义匹配搜索工具包。
 - TFIDF
 - SimHash
 
-### 图像相似度计算
+### 图像相似度计算（图像匹配）
 #### 语义模型
 - [CLIP(Contrastive Language-Image Pre-Training)](https://github.com/shibing624/similarities/blob/main/similarities/imagesim.py#L25)
 - VGG(doing)
@@ -70,6 +70,49 @@ Official Demo: http://42.193.145.218/product/short_text_sim/
 HuggingFace Demo: https://huggingface.co/spaces/shibing624/text2vec
 
 ![](docs/hf.png)
+
+
+# Evaluation
+### 文本匹配和文本检索
+#### 中文文本匹配模型评测结果
+
+| Model | ATEC | BQ | LCQMC | PAWSX | STS-B | Avg | QPS |
+| :---- | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| Word2Vec | 20.00 | 31.49 | 59.46 | 2.57 | 55.78 | 33.86 | 10283 |
+| SBERT-multi | 18.42 | 38.52 | 63.96 | 10.14 | 78.90 | 41.99 | 2371 |
+| Text2vec | 31.93 | 42.67 | 70.16 | 17.21 | 79.30 | **48.25** | 2572 |
+
+> 结果值使用spearman系数
+
+Model(doing):
+- Cilin
+- Hownet
+- SimHash
+- TFIDF
+
+#### 文本检索评测结果
+
+| Model | MS MARCO | QPS |
+| :---- | :-: | :-: |
+| Word2Vec | - | - |
+| SBERT-multi | - | - |
+| Text2vec | - | - |
+| BM25 | - | - |
+| ColBERT | - | - |
+
+> 结果值使用MRR@10、nDCG@10
+### 图像匹配和图像检索
+#### 图像匹配模型评测结果
+
+缺标准评估数据集
+
+> 结果值使用F1
+#### 图像检索评测结果
+
+缺标准评估数据集
+
+> 结果值使用MRR@10、nDCG@10
+
 
 # Install
 
