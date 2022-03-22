@@ -6,14 +6,11 @@
 
 
 class NgramUtil(object):
-    def __init__(self):
-        pass
-
     @staticmethod
     def unigrams(words):
         """
-            Input: a list of words, e.g., ["I", "am", "Denny"]
-            Output: a list of unigram
+        Input: a list of words, e.g., ["I", "am", "Denny"]
+        Output: a list of unigram
         """
         assert type(words) == list
         return words
@@ -21,8 +18,8 @@ class NgramUtil(object):
     @staticmethod
     def bigrams(words, join_string, skip=0):
         """
-           Input: a list of words, e.g., ["I", "am", "Denny"]
-           Output: a list of bigram, e.g., ["I_am", "am_Denny"]
+        Input: a list of words, e.g., ["I", "am", "Denny"]
+        Output: a list of bigram, e.g., ["I_am", "am_Denny"]
         """
         assert type(words) == list
         L = len(words)
@@ -40,8 +37,8 @@ class NgramUtil(object):
     @staticmethod
     def trigrams(words, join_string, skip=0):
         """
-           Input: a list of words, e.g., ["I", "am", "Denny"]
-           Output: a list of trigram, e.g., ["I_am_Denny"]
+        Input: a list of words, e.g., ["I", "am", "Denny"]
+        Output: a list of trigram, e.g., ["I_am_Denny"]
         """
         assert type(words) == list
         L = len(words)
@@ -60,8 +57,8 @@ class NgramUtil(object):
     @staticmethod
     def fourgrams(words, join_string):
         """
-            Input: a list of words, e.g., ["I", "am", "Denny", "boy"]
-            Output: a list of trigram, e.g., ["I_am_Denny_boy"]
+        Input: a list of words, e.g., ["I", "am", "Denny", "boy"]
+        Output: a list of trigram, e.g., ["I_am_Denny_boy"]
         """
         assert type(words) == list
         L = len(words)
@@ -81,8 +78,8 @@ class NgramUtil(object):
     @staticmethod
     def biterms(words, join_string):
         """
-            Input: a list of words, e.g., ["I", "am", "Denny", "boy"]
-            Output: a list of biterm, e.g., ["I_am", "I_Denny", "I_boy", "am_Denny", "am_boy", "Denny_boy"]
+        Input: a list of words, e.g., ["I", "am", "Denny", "boy"]
+        Output: a list of biterm, e.g., ["I_am", "I_Denny", "I_boy", "am_Denny", "am_boy", "Denny_boy"]
         """
         assert type(words) == list
         L = len(words)
@@ -99,8 +96,8 @@ class NgramUtil(object):
     @staticmethod
     def triterms(words, join_string):
         """
-            Input: a list of words, e.g., ["I", "am", "Denny", "boy"]
-            Output: a list of triterm, e.g., ["I_am_Denny", "I_am_boy", "I_Denny_boy", "am_Denny_boy"]
+        Input: a list of words, e.g., ["I", "am", "Denny", "boy"]
+        Output: a list of triterm, e.g., ["I_am_Denny", "I_am_boy", "I_Denny_boy", "am_Denny_boy"]
         """
         assert type(words) == list
         L = len(words)
@@ -118,8 +115,8 @@ class NgramUtil(object):
     @staticmethod
     def fourterms(words, join_string):
         """
-            Input: a list of words, e.g., ["I", "am", "Denny", "boy", "ha"]
-            Output: a list of fourterm, e.g., ["I_am_Denny_boy", "I_am_Denny_ha", "I_am_boy_ha", "I_Denny_boy_ha", "am_Denny_boy_ha"]
+        Input: a list of words, e.g., ["I", "am", "Denny", "boy", "ha"]
+        Output: a list of fourterm, e.g., ["I_am_Denny_boy", "I_am_Denny_ha", "I_am_boy_ha", "I_Denny_boy_ha", "am_Denny_boy_ha"]
         """
         assert type(words) == list
         L = len(words)
@@ -157,6 +154,12 @@ class NgramUtil(object):
             bigram = [x for x in NgramUtil.bigrams(words, join_string) if len(x.split(join_string)) == 2]
             trigram = [x for x in NgramUtil.trigrams(words, join_string) if len(x.split(join_string)) == 3]
             return unigram + bigram + trigram
+        elif ngram == 1234:
+            unigram = NgramUtil.unigrams(words)
+            bigram = [x for x in NgramUtil.bigrams(words, join_string) if len(x.split(join_string)) == 2]
+            trigram = [x for x in NgramUtil.trigrams(words, join_string) if len(x.split(join_string)) == 3]
+            fourgram = [x for x in NgramUtil.fourgrams(words, join_string) if len(x.split(join_string)) == 4]
+            return unigram + bigram + trigram + fourgram
 
     @staticmethod
     def nterms(words, nterm, join_string=" "):
