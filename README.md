@@ -65,11 +65,11 @@ similarities：相似度计算、语义匹配搜索工具包。
 
 # Demo
 
-Official Demo: http://42.193.145.218/product/short_text_sim/
+Compute similarity score Demo: https://huggingface.co/spaces/shibing624/text2vec
 
-HuggingFace Demo: https://huggingface.co/spaces/shibing624/text2vec
+Semantic Search Demo: https://huggingface.co/spaces/shibing624/similarities
 
-![](docs/hf.png)
+![](docs/hf_search.png)
 
 
 # Evaluation
