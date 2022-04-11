@@ -141,7 +141,18 @@ r = m.similarity('如何更换花呗绑定银行卡', '花呗更改绑定银行�
 print(f"similarity score: {float(r)}")  # similarity score: 0.855146050453186
 ```
 
-> 余弦值`score`范围是[-1, 1]，值越大越相似。
+Similarity的默认方法：
+```python
+Similarity(corpus: Union[List[str], Dict[str, str]] = None, 
+           model_name_or_path="shibing624/text2vec-base-chinese",
+           max_seq_length=128)
+```
+
+> 返回值：余弦值`score`范围是[-1, 1]，值越大越相似
+> corpus表示搜索的doc集，仅搜索时需要，输入doc格式兼容：句子列表和{corpus_id: sentence}的dict格式
+> model_name_or_path表示模型，默认使用中文表征式匹配模型`shibing624/text2vec-base-chinese`，可以替换为多语言
+表征模型`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+> max_seq_length表示输入句子的最大长度，最大为匹配模型支持的最大长度，BERT系列是512
 
 ### 2. 文本语义匹配搜索
 
