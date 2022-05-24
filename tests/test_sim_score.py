@@ -36,6 +36,22 @@ class SimScoreTestCase(unittest.TestCase):
         self.assertEqual(len(r), 2)
         self.assertEqual(len(r[0]), 0)
 
+    def test_case(self):
+        cases = [("牙疼有蛀牙怎么办", "手机前十名排行榜"),
+                 ("小游戏,下载", "干洗机什么牌子的好"),
+                 ("如何恢复微信里面的聊天记录", "吸氢气机"),
+                 ("胃病症状的早期表现", "胃溃疡症状"), ]
+        for i in cases:
+            print(i)
+            r = m.similarity(i[0], i[1])
+            print(r)
+        print("-" * 50)
+        new_m = Similarity(model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+        for i in cases:
+            print(i)
+            r = new_m.similarity(i[0], i[1])
+            print(r)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -42,7 +42,7 @@ setup(
     keywords='similarities,Chinese Text Similarity Calculation Tool,similarity,word2vec',
     install_requires=[
         "text2vec>=1.1.5",
-        "transformers>=4.6.0",
+        "transformers",
         "jieba>=0.39",
         "loguru",
         "Pillow",
