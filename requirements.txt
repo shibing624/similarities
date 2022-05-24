@@ -6,4 +6,3 @@ Pillow
 hnswlib
 annoy
 opencv-python
-pytrec_eval
