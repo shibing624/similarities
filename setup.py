@@ -46,7 +46,7 @@ setup(
         "jieba>=0.39",
         "loguru",
         "Pillow",
-        "hnswlib",
+        # "hnswlib",
         # "opencv-python",
         # "annoy",
     ],
