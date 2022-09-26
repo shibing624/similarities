@@ -22,7 +22,7 @@ from text2vec import Word2Vec
 from similarities.similarity import SimilarityABC
 from similarities.utils.distance import string_hash, hamming_distance
 from similarities.utils.rank_bm25 import BM25Okapi
-from similarities.utils.tfidf import TFIDF, default_stopwords
+from similarities.utils.tfidf import TFIDF, load_stopwords, default_stopwords_file
 from similarities.utils.util import cos_sim, semantic_search
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
@@ -296,6 +296,7 @@ class BM25Similarity(SimilarityABC):
         self.corpus = {}
         self.corpus_ids_map = {}
         self.bm25 = None
+        self.default_stopwords = load_stopwords(default_stopwords_file)
         if corpus is not None:
             self.add_corpus(corpus)
 
@@ -333,8 +334,8 @@ class BM25Similarity(SimilarityABC):
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_texts = list(corpus_new.values())
         corpus_seg = [jieba.lcut(d) for d in corpus_texts]
-        corpus_seg = [[w for w in doc if (w.strip().lower() not in default_stopwords) and len(w.strip()) > 0] for doc in
-                      corpus_seg]
+        corpus_seg = [[w for w in doc if (w.strip().lower() not in self.default_stopwords) and
+                       len(w.strip()) > 0] for doc in corpus_seg]
         self.bm25 = BM25Okapi(corpus_seg)
         logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
 

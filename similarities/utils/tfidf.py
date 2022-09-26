@@ -24,9 +24,6 @@ def load_stopwords(file_path):
     return stopwords
 
 
-default_stopwords = load_stopwords(default_stopwords_file)
-
-
 class IDFLoader:
     def __init__(self, idf_path=None):
         self.path = ""
@@ -52,7 +49,7 @@ class IDFLoader:
 
 class TFIDF:
     def __init__(self, idf_path=None, stopwords=None):
-        self.stopwords = stopwords if stopwords else default_stopwords
+        self.stopwords = stopwords if stopwords is not None else load_stopwords(default_stopwords_file)
         self.idf_loader = IDFLoader(idf_path or DEFAULT_IDF)
         self.idf_freq, self.median_idf = self.idf_loader.get_idf()
 
