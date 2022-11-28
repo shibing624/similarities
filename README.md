@@ -422,11 +422,11 @@ Xu, M. Similarities: Compute similarity score for humans (Version 1.0.1) [Comput
 BibTeX:
 
 ```
-@software{Xu_Similarities_Compute_similarity,
-author = {Xu, Ming},
-title = {Similarities: similarity calculation and semantic search toolkit},
-url = {https://github.com/shibing624/similarities},
-version = {1.0.1}
+@misc{Xu_Similarities_Compute_similarity,
+  title={Similarities: similarity calculation and semantic search toolkit},
+  author={Xu Ming},
+  year={2022},
+  howpublished={\url{https://github.com/shibing624/similarities}},
 }
 ```
 
