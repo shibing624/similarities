@@ -113,12 +113,14 @@ def is_str_match(str1, str2, threshold=1.0):
 
 
 def longest_match_size(str1, str2):
+    """最长公共子串长度"""
     sq = SequenceMatcher(lambda x: x == " ", str1, str2)
     match = sq.find_longest_match(0, len(str1), 0, len(str2))
     return match.size
 
 
 def longest_match_ratio(str1, str2):
+    """最长公共子串占比"""
     sq = SequenceMatcher(lambda x: x == " ", str1, str2)
     match = sq.find_longest_match(0, len(str1), 0, len(str2))
     return try_divide(match.size, min(len(str1), len(str2)))
@@ -134,7 +136,7 @@ def jaccard_coef(A, B):
 
 def num_of_common_sub_str(str1, str2):
     """
-    求两个字符串的最长公共子串
+    求两个字符串的最长公共子串，同longest_match_size
     思想：建立一个二维数组，保存连续位相同与否的状态
     """
     lstr1 = len(str1)
@@ -194,18 +196,24 @@ def z_score(x, axis=0):
 
 
 if __name__ == '__main__':
-    vec1_test = np.array([1, 38, 17, 32])
-    vec2_test = np.array([5, 6, 8, 9])
-
-    str1_test = "你到底是谁?"
-    str2_test = "没想到我是谁，是真样子"
+    vec1_test = np.array([1.0, 38.0, 17.0, 32.0])
+    vec2_test = np.array([5.0, 6.0, 8.0, 9.0])
 
     print(euclidean_distance(vec1_test, vec2_test))
     print(cosine_distance(vec1_test, vec2_test))
     print(manhattan_distance(vec1_test, vec2_test))
 
+    str1_test = "你到底是谁?"
+    str2_test = "没想到我是谁，是真样子"
     print('strs:', str1_test, str2_test)
     print(edit_distance(str1_test, str2_test))
     print(num_of_common_sub_str(str1_test, str2_test))
     print(max_min_normalize(vec1_test))  # 归一化（0-1）
     print(z_score(vec1_test))  # 标准化（0附近，正负）
+
+    str1 = '刘若英是演员和歌手'
+    str2 = '刘若英是演员吗？'
+    print(f"{str1} vs {str2} common sub str: {num_of_common_sub_str(str1, str2)}")
+    print(f"{str1} vs {str2} longest match size: {longest_match_size(str1, str2)}")
+    print(f"{str1} vs {str2} longest match ratio: {longest_match_ratio(str1, str2)}")
+

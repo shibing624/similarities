@@ -8,8 +8,16 @@ from loguru import logger
 
 sys.path.append('..')
 
-from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Similarity, \
-    WordEmbeddingSimilarity, CilinSimilarity, HownetSimilarity
+from similarities import (
+    SimHashSimilarity,
+    TfidfSimilarity,
+    BM25Similarity,
+    WordEmbeddingSimilarity,
+    CilinSimilarity,
+    HownetSimilarity,
+    SameCharsSimilarity,
+    SequenceMatcherSimilarity,
+)
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
@@ -54,7 +62,8 @@ if __name__ == '__main__':
 
     queries = [
         '我的花呗开通了？',
-        '乌克兰被俄罗斯警告'
+        '乌克兰被俄罗斯警告',
+        '更改绑定银行卡',
     ]
     print('text1: ', text1)
     print('text2: ', text2)
@@ -65,3 +74,5 @@ if __name__ == '__main__':
     sim_and_search(WordEmbeddingSimilarity())
     sim_and_search(CilinSimilarity())
     sim_and_search(HownetSimilarity())
+    sim_and_search(SameCharsSimilarity())
+    sim_and_search(SequenceMatcherSimilarity())

@@ -16,12 +16,14 @@ from similarities.literalsim import (
     BM25Similarity,
     WordEmbeddingSimilarity,
     CilinSimilarity,
-    HownetSimilarity
+    HownetSimilarity,
+    SameCharsSimilarity,
+    SequenceMatcherSimilarity,
 )
 from similarities.imagesim import (
     ImageHashSimilarity,
     ClipSimilarity,
-    SiftSimilarity
+    SiftSimilarity,
 )
 from similarities.data_loader import SearchDataLoader
 from similarities import evaluation

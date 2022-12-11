@@ -20,7 +20,7 @@ from tqdm import tqdm
 from text2vec import Word2Vec
 
 from similarities.similarity import SimilarityABC
-from similarities.utils.distance import string_hash, hamming_distance
+from similarities.utils.distance import string_hash, hamming_distance, longest_match_ratio
 from similarities.utils.rank_bm25 import BM25Okapi
 from similarities.utils.tfidf import TFIDF, load_stopwords, default_stopwords_file
 from similarities.utils.util import cos_sim, semantic_search
@@ -114,12 +114,21 @@ class SimHashSimilarity(SimilarityABC):
                 hash_code = hash_code + '0'
         return hash_code
 
+    def ori_simhash(self, sentence: str):
+        """
+        Compute SimHash for a given text.
+        :param sentence: str
+        :return: hash code
+        """
+        hash_code = string_hash(sentence)
+        return hash_code
+
     def _sim_score(self, seq1, seq2):
         """Convert hamming distance to similarity score."""
         # 将距离转化为相似度
         score = 0.0
         if len(seq1) > 2 and len(seq2) > 2:
-            score = 1 - hamming_distance(seq1, seq2) / len(seq1)
+            score = 1 - hamming_distance(seq1, seq2, normalize=True)
         return score
 
     def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
@@ -733,6 +742,197 @@ class HownetSimilarity(SimilarityABC):
 
     def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """Compute Hownet distance between two keys."""
+        return [1 - s for s in self.similarity(a, b)]
+
+    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
+        """Find the topn most similar texts to the query against the corpus."""
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+        if isinstance(queries, list):
+            queries = {id: query for id, query in enumerate(queries)}
+        result = {qid: {} for qid, query in queries.items()}
+
+        for qid, query in queries.items():
+            q_res = []
+            for corpus_id, doc in self.corpus.items():
+                score = self.similarity(query, doc)[0]
+                q_res.append((corpus_id, score))
+            q_res.sort(key=lambda x: x[1], reverse=True)
+            q_res = q_res[:topn]
+            for corpus_id, score in q_res:
+                result[qid][corpus_id] = score
+
+        return result
+
+
+class SameCharsSimilarity(SimilarityABC):
+    """
+    Compute text chars similarity between two sentences and retrieves most
+    similar sentence for a given corpus.
+    不考虑文本字符位置顺序，基于相同字符数占比计算相似度
+    """
+
+    def __init__(self, corpus: Union[List[str], Dict[str, str]] = None):
+        super().__init__()
+        self.corpus = {}
+        self.corpus_ids_map = {}
+        if corpus is not None:
+            self.add_corpus(corpus)
+
+    def __len__(self):
+        """Get length of corpus."""
+        return len(self.corpus)
+
+    def __str__(self):
+        base = f"Similarity: {self.__class__.__name__}, matching_model: TextChars"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
+
+    def add_corpus(self, corpus: Union[List[str], Dict[str, str]]):
+        """
+        Extend the corpus with new documents.
+
+        Parameters
+        ----------
+        corpus : list of str
+        """
+        corpus_new = {}
+        start_id = len(self.corpus) if self.corpus else 0
+        if isinstance(corpus, list):
+            corpus = list(set(corpus))
+            for id, doc in enumerate(corpus):
+                if doc not in list(self.corpus.values()):
+                    corpus_new[start_id + id] = doc
+        else:
+            for id, doc in corpus.items():
+                if doc not in list(self.corpus.values()):
+                    corpus_new[id] = doc
+        self.corpus.update(corpus_new)
+        self.corpus_ids_map = {i: id for i, id in enumerate(list(self.corpus.keys()))}
+        logger.info(f"Start add new docs: {len(corpus_new)}")
+        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
+
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
+        """
+        Compute Chars similarity between two texts.
+        :param a:
+        :param b:
+        :return:
+        """
+        if isinstance(a, str):
+            a = [a]
+        if isinstance(b, str):
+            b = [b]
+        if len(a) != len(b):
+            raise ValueError("expected two inputs of the same length")
+
+        def calc_pair_sim(sentence1, sentence2):
+            if not sentence1 or not sentence2:
+                return 0.0
+            same = set(sentence1) & set(sentence2)
+            similarity_score = max(len(same) / len(set(sentence1)), len(same) / len(set(sentence2)))
+            return similarity_score
+
+        return [calc_pair_sim(sentence1, sentence2) for sentence1, sentence2 in zip(a, b)]
+
+    def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
+        """Compute cosine distance between two texts."""
+        return [1 - s for s in self.similarity(a, b)]
+
+    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
+        """Find the topn most similar texts to the query against the corpus."""
+        if isinstance(queries, str) or not hasattr(queries, '__len__'):
+            queries = [queries]
+        if isinstance(queries, list):
+            queries = {id: query for id, query in enumerate(queries)}
+        result = {qid: {} for qid, query in queries.items()}
+
+        for qid, query in queries.items():
+            q_res = []
+            for corpus_id, doc in self.corpus.items():
+                score = self.similarity(query, doc)[0]
+                q_res.append((corpus_id, score))
+            q_res.sort(key=lambda x: x[1], reverse=True)
+            q_res = q_res[:topn]
+            for corpus_id, score in q_res:
+                result[qid][corpus_id] = score
+
+        return result
+
+
+class SequenceMatcherSimilarity(SimilarityABC):
+    """
+    Compute text sequence matcher similarity between two sentences and retrieves most
+    similar sentence for a given corpus.
+    考虑文本字符位置顺序，基于最长公共子串占比计算相似度
+    """
+
+    def __init__(self, corpus: Union[List[str], Dict[str, str]] = None):
+        super().__init__()
+        self.corpus = {}
+        self.corpus_ids_map = {}
+        if corpus is not None:
+            self.add_corpus(corpus)
+
+    def __len__(self):
+        """Get length of corpus."""
+        return len(self.corpus)
+
+    def __str__(self):
+        base = f"Similarity: {self.__class__.__name__}, matching_model: TextMatcher"
+        if self.corpus:
+            base += f", corpus size: {len(self.corpus)}"
+        return base
+
+    def add_corpus(self, corpus: Union[List[str], Dict[str, str]]):
+        """
+        Extend the corpus with new documents.
+
+        Parameters
+        ----------
+        corpus : list of str
+        """
+        corpus_new = {}
+        start_id = len(self.corpus) if self.corpus else 0
+        if isinstance(corpus, list):
+            corpus = list(set(corpus))
+            for id, doc in enumerate(corpus):
+                if doc not in list(self.corpus.values()):
+                    corpus_new[start_id + id] = doc
+        else:
+            for id, doc in corpus.items():
+                if doc not in list(self.corpus.values()):
+                    corpus_new[id] = doc
+        self.corpus.update(corpus_new)
+        self.corpus_ids_map = {i: id for i, id in enumerate(list(self.corpus.keys()))}
+        logger.info(f"Start add new docs: {len(corpus_new)}")
+        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
+
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
+        """
+        Compute Chars similarity between two texts.
+        :param a:
+        :param b:
+        :return:
+        """
+        if isinstance(a, str):
+            a = [a]
+        if isinstance(b, str):
+            b = [b]
+        if len(a) != len(b):
+            raise ValueError("expected two inputs of the same length")
+
+        def calc_pair_sim(sentence1, sentence2):
+            if not sentence1 or not sentence2:
+                return 0.0
+            similarity_score = longest_match_ratio(sentence1, sentence2)
+            return similarity_score
+
+        return [calc_pair_sim(sentence1, sentence2) for sentence1, sentence2 in zip(a, b)]
+
+    def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
+        """Compute cosine distance between two texts."""
         return [1 - s for s in self.similarity(a, b)]
 
     def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
