@@ -20,7 +20,7 @@ from tqdm import tqdm
 from text2vec import Word2Vec
 
 from similarities.similarity import SimilarityABC
-from similarities.utils.distance import string_hash, hamming_distance, longest_match_ratio
+from similarities.utils.distance import string_hash, hamming_distance, longest_match_size
 from similarities.utils.rank_bm25 import BM25Okapi
 from similarities.utils.tfidf import TFIDF, load_stopwords, default_stopwords_file
 from similarities.utils.util import cos_sim, semantic_search
@@ -112,15 +112,6 @@ class SimHashSimilarity(SimilarityABC):
                 hash_code = hash_code + '1'
             else:
                 hash_code = hash_code + '0'
-        return hash_code
-
-    def ori_simhash(self, sentence: str):
-        """
-        Compute SimHash for a given text.
-        :param sentence: str
-        :return: hash code
-        """
-        hash_code = string_hash(sentence)
         return hash_code
 
     def _sim_score(self, seq1, seq2):
@@ -784,7 +775,7 @@ class SameCharsSimilarity(SimilarityABC):
         return len(self.corpus)
 
     def __str__(self):
-        base = f"Similarity: {self.__class__.__name__}, matching_model: TextChars"
+        base = f"Similarity: {self.__class__.__name__}, matching_model: SameChars"
         if self.corpus:
             base += f", corpus size: {len(self.corpus)}"
         return base
@@ -880,7 +871,7 @@ class SequenceMatcherSimilarity(SimilarityABC):
         return len(self.corpus)
 
     def __str__(self):
-        base = f"Similarity: {self.__class__.__name__}, matching_model: TextMatcher"
+        base = f"Similarity: {self.__class__.__name__}, matching_model: SequenceMatcher"
         if self.corpus:
             base += f", corpus size: {len(self.corpus)}"
         return base
@@ -909,11 +900,14 @@ class SequenceMatcherSimilarity(SimilarityABC):
         logger.info(f"Start add new docs: {len(corpus_new)}")
         logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
 
-    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]],
+                   min_same_len: int = 70, min_same_len_score: float = 0.9):
         """
         Compute Chars similarity between two texts.
         :param a:
         :param b:
+        :param min_same_len:
+        :param min_same_len_score:
         :return:
         """
         if isinstance(a, str):
@@ -926,7 +920,9 @@ class SequenceMatcherSimilarity(SimilarityABC):
         def calc_pair_sim(sentence1, sentence2):
             if not sentence1 or not sentence2:
                 return 0.0
-            similarity_score = longest_match_ratio(sentence1, sentence2)
+            same_size = longest_match_size(sentence1, sentence2)
+            same_score = min_same_len_score if same_size > min_same_len else 0.0
+            similarity_score = max(same_size / len(sentence1), same_size / len(sentence2), same_score)
             return similarity_score
 
         return [calc_pair_sim(sentence1, sentence2) for sentence1, sentence2 in zip(a, b)]

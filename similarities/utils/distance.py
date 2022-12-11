@@ -114,14 +114,14 @@ def is_str_match(str1, str2, threshold=1.0):
 
 def longest_match_size(str1, str2):
     """最长公共子串长度"""
-    sq = SequenceMatcher(lambda x: x == " ", str1, str2)
+    sq = SequenceMatcher(None, str1, str2)
     match = sq.find_longest_match(0, len(str1), 0, len(str2))
     return match.size
 
 
 def longest_match_ratio(str1, str2):
     """最长公共子串占比"""
-    sq = SequenceMatcher(lambda x: x == " ", str1, str2)
+    sq = SequenceMatcher(None, str1, str2)
     match = sq.find_longest_match(0, len(str1), 0, len(str2))
     return try_divide(match.size, min(len(str1), len(str2)))
 
