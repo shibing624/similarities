@@ -32,13 +32,13 @@ similarities：相似度计算、语义匹配搜索工具包。
 - 汉明距离（Hamming Distance），编辑距离（Levenshtein Distance），欧氏距离（Euclidean Distance），曼哈顿距离（Manhattan Distance）等
 
 #### 语义模型
-- [CoSENT文本匹配模型](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L79)[推荐]
+- [CoSENT文本匹配模型](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L79)【推荐】
 - BERT模型（文本向量表征）
 - SentenceBERT文本匹配模型
 
 
 #### 字面模型
-- [Word2Vec文本浅层语义表征](https://github.com/shibing624/similarities/blob/main/similarities/literalsim.py#L374)[推荐]
+- [Word2Vec文本浅层语义表征](https://github.com/shibing624/similarities/blob/main/similarities/literalsim.py#L374)【推荐】
 - 同义词词林
 - 知网Hownet义原匹配
 - BM25、RankBM25
@@ -52,7 +52,7 @@ similarities：相似度计算、语义匹配搜索工具包。
 - ResNet(doing)
 
 #### 特征提取
-- [pHash](https://github.com/shibing624/similarities/blob/main/similarities/imagesim.py#L164)[推荐], dHash, wHash, aHash
+- [pHash](https://github.com/shibing624/similarities/blob/main/similarities/imagesim.py#L164)【推荐】, dHash, wHash, aHash
 - SIFT, Scale Invariant Feature Transform(SIFT)
 - SURF, Speeded Up Robust Features(SURF)(doing)
 
@@ -84,34 +84,12 @@ Semantic Search Demo: https://huggingface.co/spaces/shibing624/similarities
 
 > 结果值使用spearman系数
 
-Model(doing):
+Model:
 - Cilin
 - Hownet
 - SimHash
 - TFIDF
 
-#### 文本检索评测结果
-
-| Model | MS MARCO | QPS |
-| :---- | :-: | :-: |
-| Word2Vec | - | - |
-| SBERT-multi | - | - |
-| Text2vec | - | - |
-| BM25 | - | - |
-| ColBERT | - | - |
-
-> 结果值使用MRR@10、nDCG@10
-### 图像匹配和图像检索
-#### 图像匹配模型评测结果
-
-缺标准评估数据集
-
-> 结果值使用F1
-#### 图像检索评测结果
-
-缺标准评估数据集
-
-> 结果值使用MRR@10、nDCG@10
 
 
 # Install
@@ -150,12 +128,11 @@ Similarity(corpus: Union[List[str], Dict[str, str]] = None,
 
 > 返回值：余弦值`score`范围是[-1, 1]，值越大越相似
 
-> corpus表示搜索的doc集，仅搜索时需要，输入doc格式兼容：句子列表和{corpus_id: sentence}的dict格式
+> corpus表示：搜索用的doc集，仅搜索时需要，输入格式：句子列表`List[str]`或者{corpus_id: sentence}的`Dict[str, str]`格式
 
-> model_name_or_path表示模型，默认使用中文表征式匹配模型`shibing624/text2vec-base-chinese`，可以替换为多语言
-表征模型`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+> model_name_or_path表示：模型名称或者模型路径，默认使用中文表征式匹配模型`shibing624/text2vec-base-chinese`，可以替换为多语言表征模型`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
 
-> max_seq_length表示输入句子的最大长度，最大为匹配模型支持的最大长度，BERT系列是512
+> max_seq_length表示：输入句子的最大长度，最大为匹配模型支持的最大长度，BERT系列是512
 
 ### 2. 文本语义匹配搜索
 
