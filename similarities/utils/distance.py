@@ -83,7 +83,7 @@ def edit_distance(str1, str2):
         # very fast
         # http://stackoverflow.com/questions/14260126/how-python-levenshtein-ratio-is-computed
         import Levenshtein
-        d = 1.0 - Levenshtein.distance(str1, str2) / float(max(len(str1), len(str2)))
+        d = Levenshtein.distance(str1, str2) / float(max(len(str1), len(str2)))
     except:
         # https://docs.python.org/2/library/difflib.html
         d = 1.0 - SequenceMatcher(lambda x: x == " ", str1, str2).ratio()
@@ -206,8 +206,15 @@ if __name__ == '__main__':
     str1_test = "你到底是谁?"
     str2_test = "没想到我是谁，是真样子"
     print('strs:', str1_test, ' vs ', str2_test)
-    print(edit_distance(str1_test, str2_test))
-    print('edit sim:', 1 - edit_distance(str1_test, str2_test))
+    print('edit_dist', edit_distance(str1_test, str2_test))
+    print('edit_sim:', 1 - edit_distance(str1_test, str2_test))
+
+    str1_test = "private Thread currentThread;"
+    str2_test = "private volatile Thread currentThread;"
+    print('strs:', str1_test, ' vs ', str2_test)
+    print('edit_dist', edit_distance(str1_test, str2_test))
+    print('edit_sim:', 1 - edit_distance(str1_test, str2_test))
+
     print(num_of_common_sub_str(str1_test, str2_test))
     print(max_min_normalize(vec1_test))  # 归一化（0-1）
     print(z_score(vec1_test))  # 标准化（0附近，正负）
