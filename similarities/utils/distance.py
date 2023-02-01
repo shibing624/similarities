@@ -83,10 +83,10 @@ def edit_distance(str1, str2):
         # very fast
         # http://stackoverflow.com/questions/14260126/how-python-levenshtein-ratio-is-computed
         import Levenshtein
-        d = Levenshtein.distance(str1, str2) / float(max(len(str1), len(str2)))
+        d = 1.0 - Levenshtein.distance(str1, str2) / float(max(len(str1), len(str2)))
     except:
         # https://docs.python.org/2/library/difflib.html
-        d = 1. - SequenceMatcher(lambda x: x == " ", str1, str2).ratio()
+        d = 1.0 - SequenceMatcher(lambda x: x == " ", str1, str2).ratio()
     return d
 
 
@@ -109,7 +109,7 @@ def is_str_match(str1, str2, threshold=1.0):
     if float(threshold) == 1.0:
         return str1 == str2
     else:
-        return (1. - edit_distance(str1, str2)) >= threshold
+        return (1.0 - edit_distance(str1, str2)) >= threshold
 
 
 def longest_match_size(str1, str2):
@@ -205,8 +205,9 @@ if __name__ == '__main__':
 
     str1_test = "你到底是谁?"
     str2_test = "没想到我是谁，是真样子"
-    print('strs:', str1_test, str2_test)
+    print('strs:', str1_test, ' vs ', str2_test)
     print(edit_distance(str1_test, str2_test))
+    print('edit sim:', 1 - edit_distance(str1_test, str2_test))
     print(num_of_common_sub_str(str1_test, str2_test))
     print(max_min_normalize(vec1_test))  # 归一化（0-1）
     print(z_score(vec1_test))  # 标准化（0附近，正负）
@@ -216,4 +217,3 @@ if __name__ == '__main__':
     print(f"{str1} vs {str2} common sub str: {num_of_common_sub_str(str1, str2)}")
     print(f"{str1} vs {str2} longest match size: {longest_match_size(str1, str2)}")
     print(f"{str1} vs {str2} longest match ratio: {longest_match_ratio(str1, str2)}")
-
