@@ -41,6 +41,8 @@ corpus = [
 ]
 
 model.add_corpus(corpus)
+model.save_index('en_corpus_emb.json')
+model.load_index('en_corpus_emb.json')
 res = model.most_similar(queries=sentences1, topn=3)
 print(res)
 for q_id, c in res.items():

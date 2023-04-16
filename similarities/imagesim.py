@@ -38,7 +38,6 @@ class ClipSimilarity(SimilarityABC):
         self.clip_model = CLIPModel(model_name_or_path)  # load the CLIP model
         self.score_functions = {'cos_sim': cos_sim, 'dot': dot_score}
         self.corpus = {}
-        self.corpus_ids_map = {}
         self.corpus_embeddings = []
         if corpus is not None:
             self.add_corpus(corpus)
@@ -59,11 +58,17 @@ class ClipSimilarity(SimilarityABC):
             img = img.convert('RGB')
         return img
 
-    def _get_vector(self, text_or_img: Union[List[Image.Image], Image.Image, str, List[str]],
-                    show_progress_bar: bool = False):
+    def _get_vector(
+            self,
+            text_or_img: Union[List[Image.Image], Image.Image, str, List[str]],
+            batch_size: int = 128,
+            show_progress_bar: bool = False,
+    ):
         """
         Returns the embeddings for a batch of images.
-        :param text_or_img: list of str or str or Image.Image or image list
+        :param text_or_img: list of str or Image.Image or image list
+        :param batch_size: batch size
+        :param show_progress_bar: show progress bar
         :return: np.ndarray, embeddings for the given images
         """
         if isinstance(text_or_img, str):
@@ -72,7 +77,7 @@ class ClipSimilarity(SimilarityABC):
             text_or_img = [text_or_img]
         if isinstance(text_or_img, list) and isinstance(text_or_img[0], Image.Image):
             text_or_img = [self._convert_to_rgb(i) for i in text_or_img]
-        return self.clip_model.encode(text_or_img, batch_size=128, show_progress_bar=show_progress_bar)
+        return self.clip_model.encode(text_or_img, batch_size=batch_size, show_progress_bar=show_progress_bar)
 
     def add_corpus(self, corpus: Union[List[Image.Image], Dict[str, Image.Image]]):
         """
@@ -93,7 +98,6 @@ class ClipSimilarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        self.corpus_ids_map = {i: id for i, id in enumerate(list(self.corpus.keys()))}
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_embeddings = self._get_vector(list(corpus_new.values()), show_progress_bar=True).tolist()
         if self.corpus_embeddings:
@@ -147,7 +151,7 @@ class ClipSimilarity(SimilarityABC):
         all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn)
         for idx, hits in enumerate(all_hits):
             for hit in hits[0:topn]:
-                result[queries_ids_map[idx]][self.corpus_ids_map[hit['corpus_id']]] = hit['score']
+                result[queries_ids_map[idx]][hit['corpus_id']] = hit['score']
 
         return result
 
@@ -201,7 +205,6 @@ class ImageHashSimilarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        self.corpus_ids_map = {i: id for i, id in enumerate(list(self.corpus.keys()))}
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_embeddings = []
         for doc_fp in tqdm(list(corpus_new.values()), desc="Calculating corpus image hash"):
@@ -317,7 +320,6 @@ class SiftSimilarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        self.corpus_ids_map = {i: id for i, id in enumerate(list(self.corpus.keys()))}
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_embeddings = []
         for img in tqdm(list(corpus_new.values()), desc="Calculating corpus image SIFT"):

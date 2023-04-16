@@ -23,6 +23,34 @@ corpus = [
 ]
 
 
+def annoy_demo():
+    corpus_new = [i + str(id) for id, i in enumerate(corpus * 10)]
+    model = AnnoySimilarity(corpus=corpus_new)
+    print(model)
+    similarity_score = model.similarity(sentences[0], sentences[1])
+    print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
+    model.add_corpus(corpus)
+    model.build_index()
+    model.save_index('annoy_model.bin')
+    print(model.most_similar("men喜欢这首歌"))
+    # Semantic Search batch
+    del model
+    model = AnnoySimilarity()
+    model.load_index('annoy_model.bin')
+    print(model.most_similar("men喜欢这首歌"))
+    queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
+    res = model.most_similar(queries, topn=3)
+    print(res)
+    for q_id, c in res.items():
+        print('query:', queries[q_id])
+        print("search top 3:")
+        for corpus_id, s in c.items():
+            print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
+
+    # os.remove('annoy_model.bin')
+    print('-' * 50 + '\n')
+
+
 def hnswlib_demo():
     corpus_new = [i + str(id) for id, i in enumerate(corpus * 10)]
     print(corpus_new)
@@ -32,8 +60,12 @@ def hnswlib_demo():
     print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
     model.add_corpus(corpus)
     model.build_index()
-    model.save_index('test.model')
+    model.save_index('hnsw_model.bin')
+    print(model.most_similar("men喜欢这首歌"))
     # Semantic Search batch
+    del model
+    model = HnswlibSimilarity()
+    model.load_index('hnsw_model.bin')
     print(model.most_similar("men喜欢这首歌"))
     queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
     res = model.most_similar(queries, topn=3)
@@ -44,34 +76,10 @@ def hnswlib_demo():
         for corpus_id, s in c.items():
             print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
 
-    os.remove('test.model')
-    print('-' * 50 + '\n')
-
-
-def annoy_demo():
-    corpus_new = [i + str(id) for id, i in enumerate(corpus * 10)]
-    model = AnnoySimilarity(corpus=corpus_new)
-    print(model)
-    similarity_score = model.similarity(sentences[0], sentences[1])
-    print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
-    model.add_corpus(corpus)
-    model.build_index()
-    model.save_index('test.model')
-    # Semantic Search batch
-    print(model.most_similar("men喜欢这首歌"))
-    queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
-    res = model.most_similar(queries, topn=3)
-    print(res)
-    for q_id, c in res.items():
-        print('query:', queries[q_id])
-        print("search top 3:")
-        for corpus_id, s in c.items():
-            print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
-
-    os.remove('test.model')
+    # os.remove('hnsw_model.bin')
     print('-' * 50 + '\n')
 
 
 if __name__ == '__main__':
-    hnswlib_demo()
     annoy_demo()
+    hnswlib_demo()

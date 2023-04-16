@@ -4,7 +4,7 @@ import sys
 from setuptools import setup, find_packages
 
 # Avoids IDE errors, but actual version is read from version.py
-__version__ = None
+__version__ = ""
 exec(open('similarities/version.py').read())
 
 if sys.version_info < (3,):
@@ -33,10 +33,6 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
     keywords='similarities,Chinese Text Similarity Calculation Tool,similarity,word2vec',

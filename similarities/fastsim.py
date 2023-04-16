@@ -19,12 +19,11 @@ class AnnoySimilarity(Similarity):
             self,
             corpus: Union[List[str], Dict[str, str]] = None,
             model_name_or_path="shibing624/text2vec-base-chinese",
-            embedding_size: int = 768,
             n_trees: int = 256
     ):
         super().__init__(corpus, model_name_or_path)
         self.index = None
-        self.embedding_size = embedding_size
+        self.embedding_size = self.get_sentence_embedding_dimension()
         self.n_trees = n_trees
         if corpus is not None and self.corpus_embeddings:
             self.build_index()
@@ -35,9 +34,8 @@ class AnnoySimilarity(Similarity):
             base += f", corpus size: {len(self.corpus)}"
         return base
 
-    def build_index(self):
-        """Build Annoy index after add new documents."""
-        # Create Annoy Index
+    def create_index(self):
+        """Create Annoy Index."""
         try:
             from annoy import AnnoyIndex
         except ImportError:
@@ -45,37 +43,49 @@ class AnnoySimilarity(Similarity):
 
         # Creating the annoy index
         self.index = AnnoyIndex(self.embedding_size, 'angular')
+        logger.debug(f"Init Annoy index, embedding_size: {self.embedding_size}")
 
-        logger.info(f"Init Annoy index, embedding_size: {self.embedding_size}")
+    def build_index(self):
+        """Build Annoy index after add new documents."""
+        self.create_index()
         logger.debug(f"Building index with {self.n_trees} trees.")
 
         for i in range(len(self.corpus_embeddings)):
             self.index.add_item(i, self.corpus_embeddings[i])
         self.index.build(self.n_trees)
 
-    def save_index(self, index_path: str):
+    def save_index(self, index_path: str = "annoy_index.bin"):
         """Save the annoy index to disk."""
-        if self.index and index_path:
-            logger.info(f"Saving index to: {index_path}")
+        if index_path:
+            if self.index is None:
+                self.build_index()
             self.index.save(index_path)
+            corpus_emb_json_path = index_path + ".json"
+            super().save_index(corpus_emb_json_path)
+            logger.info(f"Saving Annoy index to: {index_path}, corpus embedding to: {corpus_emb_json_path}")
         else:
             logger.warning("No index path given. Index not saved.")
 
-    def load_index(self, index_path: str):
+    def load_index(self, index_path: str = "annoy_index.bin"):
         """Load Annoy Index from disc."""
         if index_path and os.path.exists(index_path):
-            logger.info(f"Loading index from: {index_path}")
+            corpus_emb_json_path = index_path + ".json"
+            logger.info(f"Loading index from: {index_path}, corpus embedding from: {corpus_emb_json_path}")
+            super().load_index(corpus_emb_json_path)
+            if self.index is None:
+                self.create_index()
             self.index.load(index_path)
         else:
             logger.warning("No index path given. Index not loaded.")
 
-    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10,
+                     score_function: str = "cos_sim"):
         """Find the topn most similar texts to the query against the corpus."""
         result = {}
         if self.corpus_embeddings and self.index is None:
             logger.warning(f"No index found. Please add corpus and build index first, e.g. with `build_index()`."
                            f"Now returning slow search result.")
-            return super().most_similar(queries, topn)
+            return super().most_similar(queries, topn, score_function=score_function)
         if not self.corpus_embeddings:
             logger.error("No corpus_embeddings found. Please add corpus first, e.g. with `add_corpus()`.")
             return result
@@ -91,7 +101,7 @@ class AnnoySimilarity(Similarity):
             corpus_ids, distances = self.index.get_nns_by_vector(queries_embeddings[idx], topn, include_distances=True)
             for corpus_id, distance in zip(corpus_ids, distances):
                 score = 1 - (distance ** 2) / 2
-                result[qid][self.corpus_ids_map[corpus_id]] = score
+                result[qid][corpus_id] = score
 
         return result
 
@@ -106,10 +116,10 @@ class HnswlibSimilarity(Similarity):
             self,
             corpus: Union[List[str], Dict[str, str]] = None,
             model_name_or_path="shibing624/text2vec-base-chinese",
-            embedding_size: int = 768, ef_construction: int = 400, M: int = 64, ef: int = 50
+            ef_construction: int = 400, M: int = 64, ef: int = 50
     ):
         super().__init__(corpus, model_name_or_path)
-        self.embedding_size = embedding_size
+        self.embedding_size = self.get_sentence_embedding_dimension()
         self.ef_construction = ef_construction
         self.M = M
         self.ef = ef
@@ -123,52 +133,64 @@ class HnswlibSimilarity(Similarity):
             base += f", corpus size: {len(self.corpus)}"
         return base
 
-    def build_index(self):
-        """Build Hnswlib index after add new documents."""
-        # Create hnswlib Index
+    def create_index(self):
+        """Create Hnswlib Index."""
         try:
             import hnswlib
         except ImportError:
             raise ImportError("Hnswlib is not installed. Please install it first, e.g. with `pip install hnswlib`.")
 
-        # We use Inner Product (dot-product) as Index. We will normalize our vectors to unit length,
-        # then is Inner Product equal to cosine similarity
+        # Creating the hnswlib index
         self.index = hnswlib.Index(space='cosine', dim=self.embedding_size)
+        self.index.init_index(max_elements=len(self.corpus_embeddings), ef_construction=self.ef_construction, M=self.M)
+        # Controlling the recall by setting ef:
+        self.index.set_ef(self.ef)  # ef should always be > top_k_hits
+        logger.debug(f"Init Hnswlib index, embedding_size: {self.embedding_size}")
+
+    def build_index(self):
+        """Build Hnswlib index after add new documents."""
         # Init the HNSWLIB index
-        logger.info(f"Creating HNSWLIB index, max_elements: {len(self.corpus)}")
+        self.create_index()
+        logger.info(f"Building HNSWLIB index, max_elements: {len(self.corpus)}")
         logger.debug(f"Parameters Required: M: {self.M}")
         logger.debug(f"Parameters Required: ef_construction: {self.ef_construction}")
         logger.debug(f"Parameters Required: ef(>topn): {self.ef}")
 
-        self.index.init_index(max_elements=len(self.corpus_embeddings), ef_construction=self.ef_construction, M=self.M)
         # Then we train the index to find a suitable clustering
         self.index.add_items(self.corpus_embeddings, list(range(len(self.corpus_embeddings))))
-        # Controlling the recall by setting ef:
-        self.index.set_ef(self.ef)  # ef should always be > top_k_hits
 
-    def save_index(self, index_path: str):
-        """Save the annoy index to disk."""
-        if self.index and index_path:
-            logger.info(f"Saving index to: {index_path}")
+    def save_index(self, index_path: str = "hnswlib_index.bin"):
+        """Save the index to disk."""
+        if index_path:
+            if self.index is None:
+                self.build_index()
             self.index.save_index(index_path)
+            corpus_emb_json_path = index_path + ".json"
+            super().save_index(corpus_emb_json_path)
+            logger.info(f"Saving hnswlib index to: {index_path}, corpus embedding to: {corpus_emb_json_path}")
         else:
             logger.warning("No index path given. Index not saved.")
 
-    def load_index(self, index_path: str):
-        """Load Annoy Index from disc."""
+    def load_index(self, index_path: str = "hnswlib_index.bin"):
+        """Load Index from disc."""
         if index_path and os.path.exists(index_path):
-            logger.info(f"Loading index from: {index_path}")
+            corpus_emb_json_path = index_path + ".json"
+            logger.info(f"Loading index from: {index_path}, corpus embedding from: {corpus_emb_json_path}")
+            super().load_index(corpus_emb_json_path)
+            if self.index is None:
+                self.create_index()
             self.index.load_index(index_path)
         else:
             logger.warning("No index path given. Index not loaded.")
 
-    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10,
+                     score_function: str = "cos_sim"):
         """Find the topn most similar texts to the query against the corpus."""
         result = {}
         if self.corpus_embeddings and self.index is None:
             logger.warning(f"No index found. Please add corpus and build index first, e.g. with `build_index()`."
                            f"Now returning slow search result.")
-            return super().most_similar(queries, topn)
+            return super().most_similar(queries, topn, score_function=score_function)
         if not self.corpus_embeddings:
             logger.error("No corpus_embeddings found. Please add corpus first, e.g. with `add_corpus()`.")
             return result
@@ -186,6 +208,6 @@ class HnswlibSimilarity(Similarity):
             hits = [{'corpus_id': id, 'score': 1 - distance} for id, distance in zip(corpus_ids[i], distances[i])]
             hits = sorted(hits, key=lambda x: x['score'], reverse=True)
             for hit in hits:
-                result[qid][self.corpus_ids_map[hit['corpus_id']]] = hit['score']
+                result[qid][hit['corpus_id']] = hit['score']
 
         return result
