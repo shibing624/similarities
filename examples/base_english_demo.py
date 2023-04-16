@@ -42,6 +42,10 @@ corpus = [
 
 model.add_corpus(corpus)
 model.save_index('en_corpus_emb.json')
+res = model.most_similar(queries=sentences1, topn=3)
+print(res)
+del model
+model = Similarity(model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 model.load_index('en_corpus_emb.json')
 res = model.most_similar(queries=sentences1, topn=3)
 print(res)
