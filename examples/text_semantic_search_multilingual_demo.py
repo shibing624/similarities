@@ -45,7 +45,11 @@ corpus = [
     'The cat plays in the garden',
     'A woman watches TV',
     'The new movie is so great',
-    'Do you like pizza?'
+    'Do you like pizza?',
+    '如何更换花呗绑定银行卡',
+    '敏捷的棕色狐狸跳过了懒狗',
+    '猫在窗外',
+    '电影很棒',
 ]
 
 model.add_corpus(corpus)

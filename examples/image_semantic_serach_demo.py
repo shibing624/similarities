@@ -3,8 +3,9 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
-import sys
 import glob
+import sys
+
 from PIL import Image
 
 sys.path.append('..')
@@ -36,15 +37,19 @@ def clip_demo():
     m = ClipSimilarity()
     print(m)
     # similarity score between text and image
-    image_fps = ['data/image3.png',  # yellow flower image
-                 'data/image1.png']  # tiger image
-    texts = ['a yellow flower', 'a tiger', '一头老虎', '一朵黄花', '狮子']
+    image_fps = [
+        'data/image3.png',  # yellow flower image
+        'data/image1.png',  # tiger image
+        'data/image10.png',  # lion image
+    ]
+    texts = ['a yellow flower', '老虎', '一头狮子', '玩具车']
     imgs = [Image.open(i) for i in image_fps]
     sim_scores = m.similarity(imgs, texts)
     print('sim scores: ', sim_scores)
-    for (idx, i), j in zip(enumerate(image_fps), texts):
-        s = sim_scores[idx][idx]
-        print(f"{i} vs {j}, score: {s:.4f}")
+    for idx, i in enumerate(image_fps):
+        for idy, j in enumerate(texts):
+            s = sim_scores[idx][idy]
+            print(f"{i} vs {j}, score: {s:.4f}")
     print('-' * 50 + '\n')
 
 
