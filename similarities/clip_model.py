@@ -29,7 +29,7 @@ class CLIPModel(nn.Module):
 
     def __init__(self, model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16", processor_name=None):
         super(CLIPModel, self).__init__()
-
+        self.model_name = model_name
         if processor_name is None:
             processor_name = model_name
         if 'chinese' in model_name:
@@ -40,7 +40,7 @@ class CLIPModel(nn.Module):
             self.processor = CLIPProcessor.from_pretrained(processor_name)
 
     def __str__(self):
-        return f"CLIPModel({self.model})"
+        return f"model_name: {self.model_name} CLIPModel({self.model})"
 
     def forward(self, features):
         image_embeds = []
