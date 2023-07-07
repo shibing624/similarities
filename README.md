@@ -229,7 +229,7 @@ example: [examples/fast_text_semantic_search_demo.py](https://github.com/shibing
 example: [examples/literal_text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/literal_text_semantic_search_demo.py)
 
 ```python
-from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Similarity, \
+from similarities import SimHashSimilarity, TfidfSimilarity, BM25Similarity, \
     WordEmbeddingSimilarity, CilinSimilarity, HownetSimilarity
 
 text1 = "如何更换花呗绑定银行卡"
@@ -287,7 +287,7 @@ import glob
 from PIL import Image
 
 sys.path.append('..')
-from similarities.imagesim import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
+from similarities import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
 
 
 def sim_and_search(m):
@@ -352,14 +352,14 @@ import sys
 import glob
 from PIL import Image
 sys.path.append('..')
-from similarities.imagesim import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
+from similarities import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
 
 m = ClipSimilarity()
 print(m)
 # similarity score between text and image
 image_fps = ['data/image3.png',  # yellow flower image
              'data/image1.png']  # tiger image
-texts = ['a yellow flower', 'a tiger']
+texts = ['a yellow flower', '老虎']
 imgs = [Image.open(i) for i in image_fps]
 sim_scores = m.similarity(imgs, texts)
 
@@ -375,7 +375,7 @@ output:
 sim scores:  tensor([[0.3220, 0.2409],
         [0.1677, 0.2959]])
 data/image3.png vs a yellow flower, score: 0.3220
-data/image1.png vs a tiger, score: 0.2959
+data/image1.png vs 老虎, score: 0.2112
 ```
 
 # Contact
