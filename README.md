@@ -110,6 +110,9 @@ python3 setup.py install
 
 ### 1. 文本语义相似度计算
 
+example: [examples/text_similarity_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_similarity_demo.py)
+
+
 ```python
 from similarities import Similarity
 
@@ -137,7 +140,7 @@ Similarity(corpus: Union[List[str], Dict[str, str]] = None,
 
 一般在文档候选集中找与query最相似的文本，常用于QA场景的问句相似匹配、文本相似检索等任务。
 
-example: [examples/base_demo.py](./examples/base_demo.py)
+example: [examples/text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_semantic_search_demo.py)
 
 ```python
 import sys
@@ -210,21 +213,23 @@ search top 3:
 > 余弦`score`的值范围[-1, 1]，值越大，表示该query与corpus的文本越相似。
 
 
-#### 英文语义相似度计算和匹配搜索
+#### 多语言文本语义相似度计算和匹配搜索
 
-example: [examples/base_english_demo.py](./examples/base_english_demo.py)
+多语言：包括中、英、韩、日、德、意等多国语言
 
-### 3. 快速近似语义匹配搜索
+example: [examples/text_semantic_search_multilingual_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_semantic_search_multilingual_demo.py)
+
+### 3. 快速近似文本语义匹配搜索
 
 支持Annoy、Hnswlib的近似语义匹配搜索，常用于百万数据集的匹配搜索任务。
 
-example: [examples/fast_sim_demo.py](./examples/fast_sim_demo.py)
+example: [examples/fast_text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/fast_text_semantic_search_demo.py)
 
 ### 4. 基于字面的文本相似度计算和匹配搜索
 
 支持同义词词林（Cilin）、知网Hownet、词向量（WordEmbedding）、Tfidf、SimHash、BM25等算法的相似度计算和字面匹配搜索，常用于文本匹配冷启动。
 
-example: [examples/literal_sim_demo.py](./examples/literal_sim_demo.py)
+example: [examples/literal_text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/literal_text_semantic_search_demo.py)
 
 ```python
 from similarities.literalsim import SimHashSimilarity, TfidfSimilarity, BM25Similarity, \
@@ -277,7 +282,7 @@ search top 3:
 
 支持[CLIP](similarities/imagesim.py)、pHash、SIFT等算法的图像相似度计算和匹配搜索。
 
-example: [examples/image_demo.py](./examples/image_demo.py)
+example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/image_semantic_search_demo.py)
 
 ```python
 import sys
@@ -344,7 +349,7 @@ search top 3:
 
 ### 6. 图文互搜
 
-CLIP 模型不仅支持以图搜图，还支持图文互搜：
+CLIP 模型不仅支持以图搜图，还支持中英文图文互搜：
 ```python
 import sys
 import glob

@@ -10,15 +10,23 @@ sys.path.append('..')
 from similarities import Similarity
 
 # Two lists of sentences
-sentences1 = ['The cat sits outside',
-              'A man is playing guitar',
-              'The new movie is awesome']
+sentences1 = [
+    'The cat sits outside',
+    'A man is playing guitar',
+    'The new movie is awesome',
+    '花呗更改绑定银行卡',
+    'The quick brown fox jumps over the lazy dog.',
+]
 
-sentences2 = ['The dog plays in the garden',
-              'A woman watches TV',
-              'The new movie is so great']
+sentences2 = [
+    'The dog plays in the garden',
+    'A woman watches TV',
+    'The new movie is so great',
+    '如何更换花呗绑定银行卡',
+    '敏捷的棕色狐狸跳过了懒狗',
+]
 
-model = Similarity(model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+model = Similarity(model_name_or_path="shibing624/text2vec-base-multilingual")
 # 使用的是多语言文本匹配模型
 scores = model.similarity(sentences1, sentences2)
 print('1:use Similarity compute cos scores\n')
@@ -45,7 +53,7 @@ model.save_index('en_corpus_emb.json')
 res = model.most_similar(queries=sentences1, topn=3)
 print(res)
 del model
-model = Similarity(model_name_or_path="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+model = Similarity(model_name_or_path="shibing624/text2vec-base-multilingual")
 model.load_index('en_corpus_emb.json')
 res = model.most_similar(queries=sentences1, topn=3)
 print(res)

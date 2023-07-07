@@ -16,8 +16,8 @@ import jieba.analyse
 import jieba.posseg
 import numpy as np
 from loguru import logger
-from tqdm import tqdm
 from text2vec import Word2Vec
+from tqdm import tqdm
 
 from similarities.similarity import SimilarityABC
 from similarities.utils.distance import string_hash, hamming_distance, longest_match_size
@@ -36,7 +36,7 @@ class SimHashSimilarity(SimilarityABC):
 
     def __init__(self, corpus: Union[List[str], Dict[str, str]] = None):
         self.corpus = {}
-        
+
         self.corpus_embeddings = []
         if corpus is not None:
             self.add_corpus(corpus)
@@ -71,7 +71,7 @@ class SimHashSimilarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        
+
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_texts = list(corpus_new.values())
         corpus_embeddings = []
@@ -198,7 +198,7 @@ class TfidfSimilarity(SimilarityABC):
     def __init__(self, corpus: Union[List[str], Dict[str, str]] = None):
         super().__init__()
         self.corpus = {}
-        
+
         self.corpus_embeddings = []
         self.tfidf = TFIDF()
         if corpus is not None:
@@ -234,7 +234,7 @@ class TfidfSimilarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        
+
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_texts = list(corpus_new.values())
         corpus_embeddings = []
@@ -294,7 +294,7 @@ class BM25Similarity(SimilarityABC):
     def __init__(self, corpus: Union[List[str], Dict[str, str]] = None):
         super().__init__()
         self.corpus = {}
-        
+
         self.bm25 = None
         self.default_stopwords = load_stopwords(default_stopwords_file)
         if corpus is not None:
@@ -330,7 +330,7 @@ class BM25Similarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        
+
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_texts = list(corpus_new.values())
         corpus_seg = [jieba.lcut(d) for d in corpus_texts]
@@ -385,7 +385,7 @@ class WordEmbeddingSimilarity(SimilarityABC):
         else:
             raise ValueError("model_name_or_path must be ~text2vec.Word2Vec or Word2Vec model name")
         self.corpus = {}
-        
+
         self.corpus_embeddings = []
         if corpus is not None:
             self.add_corpus(corpus)
@@ -420,7 +420,7 @@ class WordEmbeddingSimilarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        
+
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_texts = list(corpus_new.values())
         corpus_embeddings = self._get_vector(corpus_texts, show_progress_bar=True).tolist()
@@ -479,7 +479,7 @@ class CilinSimilarity(SimilarityABC):
         super().__init__()
         self.cilin_dict = self.load_cilin_dict(cilin_path)  # Cilin(词林) semantic dictionary
         self.corpus = {}
-        
+
         if corpus is not None:
             self.add_corpus(corpus)
 
@@ -513,7 +513,7 @@ class CilinSimilarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        
+
         logger.info(f"Start add new docs: {len(corpus_new)}")
         logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
 
@@ -636,7 +636,7 @@ class HownetSimilarity(SimilarityABC):
     def __init__(self, corpus: Union[List[str], Dict[str, str]] = None, hownet_path: str = default_hownet_path):
         self.hownet_dict = self.load_hownet_dict(hownet_path)  # semantic dictionary
         self.corpus = {}
-        
+
         if corpus is not None:
             self.add_corpus(corpus)
 
@@ -670,7 +670,7 @@ class HownetSimilarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        
+
         logger.info(f"Start add new docs: {len(corpus_new)}")
         logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
 
@@ -766,7 +766,7 @@ class SameCharsSimilarity(SimilarityABC):
     def __init__(self, corpus: Union[List[str], Dict[str, str]] = None):
         super().__init__()
         self.corpus = {}
-        
+
         if corpus is not None:
             self.add_corpus(corpus)
 
@@ -800,7 +800,7 @@ class SameCharsSimilarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        
+
         logger.info(f"Start add new docs: {len(corpus_new)}")
         logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
 
@@ -862,7 +862,7 @@ class SequenceMatcherSimilarity(SimilarityABC):
     def __init__(self, corpus: Union[List[str], Dict[str, str]] = None):
         super().__init__()
         self.corpus = {}
-        
+
         if corpus is not None:
             self.add_corpus(corpus)
 
@@ -896,7 +896,7 @@ class SequenceMatcherSimilarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
-        
+
         logger.info(f"Start add new docs: {len(corpus_new)}")
         logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
 

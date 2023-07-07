@@ -8,7 +8,7 @@ import glob
 from PIL import Image
 
 sys.path.append('..')
-from similarities.imagesim import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
+from similarities import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
 
 
 def sim_and_search(m):
@@ -38,7 +38,7 @@ def clip_demo():
     # similarity score between text and image
     image_fps = ['data/image3.png',  # yellow flower image
                  'data/image1.png']  # tiger image
-    texts = ['a yellow flower', 'a tiger']
+    texts = ['a yellow flower', 'a tiger', '一头老虎', '一朵黄花', '狮子']
     imgs = [Image.open(i) for i in image_fps]
     sim_scores = m.similarity(imgs, texts)
     print('sim scores: ', sim_scores)

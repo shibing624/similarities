@@ -2,12 +2,13 @@
 """
 refer: https://github.com/UKPLab/beir/blob/main/beir/datasets/data_loader.py
 """
-from typing import Dict, Tuple
-from tqdm.autonotebook import tqdm
+import csv
 import json
 import os
-import csv
+from typing import Dict, Tuple
+
 from loguru import logger
+from tqdm.autonotebook import tqdm
 
 
 class SearchDataLoader:
@@ -44,7 +45,7 @@ class SearchDataLoader:
         if not len(self.corpus):
             logger.info("Loading Corpus...")
             self._load_corpus()
-            logger.info(f"Loaded {len(self.corpus)} Documents." )
+            logger.info(f"Loaded {len(self.corpus)} Documents.")
             logger.info(f"Doc Example: {list(self.corpus.values())[0]}")
 
         if not len(self.queries):

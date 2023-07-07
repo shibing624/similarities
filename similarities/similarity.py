@@ -8,8 +8,8 @@ Compute similarity:
 2. Retrieves most similar sentence of a query against a corpus of documents.
 """
 
-import os
 import json
+import os
 from typing import List, Union, Dict
 
 import numpy as np

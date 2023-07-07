@@ -3,9 +3,11 @@
 @author:XuMing(xuming624@qq.com)
 @description:
 """
-from typing import List, Union, Tuple, Dict
 import os
+from typing import List, Union, Dict
+
 from loguru import logger
+
 from similarities.similarity import Similarity
 
 

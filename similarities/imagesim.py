@@ -28,12 +28,14 @@ class ClipSimilarity(SimilarityABC):
     similar image for a given image corpus.
 
     CLIP: https://github.com/openai/CLIP.git
+    english model: openai/clip-vit-base-patch32
+    chinese model: OFA-Sys/chinese-clip-vit-base-patch16
     """
 
     def __init__(
             self,
             corpus: Union[List[Image.Image], Dict[str, Image.Image]] = None,
-            model_name_or_path='openai/clip-vit-base-patch32'
+            model_name_or_path='OFA-Sys/chinese-clip-vit-base-patch16'
     ):
         self.clip_model = CLIPModel(model_name_or_path)  # load the CLIP model
         self.score_functions = {'cos_sim': cos_sim, 'dot': dot_score}

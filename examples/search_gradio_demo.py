@@ -4,6 +4,7 @@
 @description: pip install gradio
 """
 import gradio as gr
+
 from similarities import Similarity
 
 sim_model = Similarity()
@@ -39,12 +40,13 @@ if __name__ == '__main__':
     ]
     input = gr.inputs.Textbox(lines=2, placeholder="Enter Query")
     output_text = gr.outputs.Textbox()
-    gr.Interface(ai_text,
-                 inputs=[input],
-                 outputs=[output_text],
-                 # theme="grass",
-                 title="Chinese Text Semantic Search Model",
-                 description="Copy or input Chinese text here. Submit and the machine will find the most similarity texts.",
-                 article="Link to <a href='https://github.com/shibing624/similarities' style='color:blue;' target='_blank\'>Github REPO</a>",
-                 examples=examples
-                 ).launch()
+    gr.Interface(
+        ai_text,
+        inputs=[input],
+        outputs=[output_text],
+        # theme="grass",
+        title="Chinese Text Semantic Search Model",
+        description="Copy or input Chinese text here. Submit and the machine will find the most similarity texts.",
+        article="Link to <a href='https://github.com/shibing624/similarities' style='color:blue;' target='_blank\'>Github REPO</a>",
+        examples=examples
+    ).launch()

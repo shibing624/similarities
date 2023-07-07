@@ -125,8 +125,8 @@ def top_k_accuracy(
 def evaluate(
         qrels: Dict[str, Dict[str, int]],
         results: Dict[str, Dict[str, float]],
-        k_values: List[int] = (1, 3, 5, 10, 100)) -> Tuple[
-    Dict[str, float], Dict[str, float], Dict[str, float], Dict[str, float]]:
+        k_values: List[int] = (1, 3, 5, 10, 100)
+) -> Tuple[Dict[str, float], Dict[str, float], Dict[str, float], Dict[str, float]]:
     try:
         import pytrec_eval
     except ImportError:

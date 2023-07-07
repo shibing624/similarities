@@ -2,30 +2,42 @@
 """
 @author:XuMing(xuming624@qq.com)
 @description: CLIP model for text and image embeddings
-model url: https://huggingface.co/openai/clip-vit-base-patch32
 """
 from typing import List, Union
 
 import numpy as np
 import torch
 import torch.nn.functional
-import transformers
 from PIL import Image
 from torch import nn
 from tqdm import trange
+from transformers import ChineseCLIPProcessor, ChineseCLIPModel, CLIPProcessor, CLIPModel
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class CLIPModel(nn.Module):
-    def __init__(self, model_name: str = "openai/clip-vit-base-patch32", processor_name=None):
+    """
+    CLIP model for text and image embeddings
+
+    Args:
+        model_name: str, default "OFA-Sys/chinese-clip-vit-base-patch16"
+            chinese model url: https://huggingface.co/OFA-Sys/chinese-clip-vit-base-patch16
+            english model url: https://huggingface.co/openai/clip-vit-base-patch32
+        processor_name: str, default None
+    """
+
+    def __init__(self, model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16", processor_name=None):
         super(CLIPModel, self).__init__()
 
         if processor_name is None:
             processor_name = model_name
-
-        self.model = transformers.CLIPModel.from_pretrained(model_name)
-        self.processor = transformers.CLIPProcessor.from_pretrained(processor_name)
+        if 'chinese' in model_name:
+            self.processor = ChineseCLIPProcessor.from_pretrained(processor_name)
+            self.model = ChineseCLIPModel.from_pretrained(model_name)
+        else:
+            self.model = CLIPModel.from_pretrained(model_name)
+            self.processor = CLIPProcessor.from_pretrained(processor_name)
 
     def __str__(self):
         return f"CLIPModel({self.model})"
