@@ -40,7 +40,6 @@ def clip_demo():
     image_fps = [
         'data/image3.png',  # yellow flower image
         'data/image1.png',  # tiger image
-        'data/image10.png',  # lion image
     ]
     texts = ['a yellow flower', '老虎', '一头狮子', '玩具车']
     imgs = [Image.open(i) for i in image_fps]
