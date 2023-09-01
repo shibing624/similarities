@@ -4,6 +4,7 @@
 
 import math
 from multiprocessing import Pool, cpu_count
+from collections import Counter
 
 import numpy as np
 
@@ -36,11 +37,7 @@ class BM25:
             self.doc_len.append(len(document))
             num_doc += len(document)
 
-            frequencies = {}
-            for word in document:
-                if word not in frequencies:
-                    frequencies[word] = 0
-                frequencies[word] += 1
+            frequencies = dict(Counter(document))
             self.doc_freqs.append(frequencies)
 
             for word, freq in frequencies.items():
