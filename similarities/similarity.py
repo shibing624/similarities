@@ -226,7 +226,7 @@ class Similarity(SimilarityABC):
         corpus_emb = {id: {"doc": self.corpus[id], "doc_emb": emb} for id, emb in
                       zip(self.corpus.keys(), self.corpus_embeddings)}
         with open(index_path, "w", encoding="utf-8") as f:
-            json.dump(corpus_emb, f)
+            json.dump(corpus_emb, f, ensure_ascii=False)
         logger.debug(f"Save corpus embeddings to file: {index_path}.")
 
     def load_index(self, index_path: str = "corpus_emb.json"):
