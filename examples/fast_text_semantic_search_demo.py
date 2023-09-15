@@ -3,7 +3,6 @@
 @author:XuMing(xuming624@qq.com)
 @description: Fast similarity search demo
 """
-import os
 import sys
 
 sys.path.append('..')
@@ -31,12 +30,12 @@ def annoy_demo():
     print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
     model.add_corpus(corpus)
     model.build_index()
-    model.save_index('annoy_model.bin')
+    model.save_index('annoy_model.index')
     print(model.most_similar("men喜欢这首歌"))
     # Semantic Search batch
     del model
     model = AnnoySimilarity()
-    model.load_index('annoy_model.bin')
+    model.load_index('annoy_model.index')
     print(model.most_similar("men喜欢这首歌"))
     queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
     res = model.most_similar(queries, topn=3)
@@ -60,12 +59,12 @@ def hnswlib_demo():
     print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
     model.add_corpus(corpus)
     model.build_index()
-    model.save_index('hnsw_model.bin')
+    model.save_index('hnsw_model.index')
     print(model.most_similar("men喜欢这首歌"))
     # Semantic Search batch
     del model
     model = HnswlibSimilarity()
-    model.load_index('hnsw_model.bin')
+    model.load_index('hnsw_model.index')
     print(model.most_similar("men喜欢这首歌"))
     queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
     res = model.most_similar(queries, topn=3)
