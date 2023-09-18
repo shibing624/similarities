@@ -16,7 +16,7 @@ from transformers import ChineseCLIPProcessor, ChineseCLIPModel, CLIPProcessor, 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-class CLIPModel(nn.Module):
+class ClipModule(nn.Module):
     """
     CLIP model for text and image embeddings
 
@@ -28,7 +28,7 @@ class CLIPModel(nn.Module):
     """
 
     def __init__(self, model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16", processor_name=None):
-        super(CLIPModel, self).__init__()
+        super(ClipModule, self).__init__()
         self.model_name = model_name
         if processor_name is None:
             processor_name = model_name
@@ -40,7 +40,7 @@ class CLIPModel(nn.Module):
             self.processor = CLIPProcessor.from_pretrained(processor_name)
 
     def __str__(self):
-        return f"model_name: {self.model_name} CLIPModel({self.model})"
+        return f"model_name: {self.model_name} ClipModule({self.model})"
 
     def forward(self, features):
         image_embeds = []
@@ -102,7 +102,7 @@ class CLIPModel(nn.Module):
 
     @staticmethod
     def load(input_path: str):
-        return CLIPModel(model_name=input_path)
+        return ClipModule(model_name=input_path)
 
     def _text_length(self, text):
         """

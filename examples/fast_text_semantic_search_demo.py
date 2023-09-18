@@ -3,11 +3,13 @@
 @author:XuMing(xuming624@qq.com)
 @description: Fast similarity search demo
 """
+
+import os
 import sys
 
 sys.path.append('..')
-from similarities.fastsim import AnnoySimilarity
-from similarities.fastsim import HnswlibSimilarity
+from similarities import AnnoySimilarity
+from similarities import HnswlibSimilarity
 
 sentences = ['如何更换花呗绑定银行卡',
              '花呗更改绑定银行卡']
@@ -30,12 +32,13 @@ def annoy_demo():
     print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
     model.add_corpus(corpus)
     model.build_index()
-    model.save_index('annoy_model.index')
+    index_file = 'annoy_model.index'
+    model.save_index(index_file)
     print(model.most_similar("men喜欢这首歌"))
     # Semantic Search batch
     del model
     model = AnnoySimilarity()
-    model.load_index('annoy_model.index')
+    model.load_index(index_file)
     print(model.most_similar("men喜欢这首歌"))
     queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
     res = model.most_similar(queries, topn=3)
@@ -46,7 +49,7 @@ def annoy_demo():
         for corpus_id, s in c.items():
             print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
 
-    # os.remove('annoy_model.bin')
+    os.remove(index_file)
     print('-' * 50 + '\n')
 
 
@@ -59,12 +62,13 @@ def hnswlib_demo():
     print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
     model.add_corpus(corpus)
     model.build_index()
-    model.save_index('hnsw_model.index')
+    index_file = 'hnsw_model.index'
+    model.save_index(index_file)
     print(model.most_similar("men喜欢这首歌"))
     # Semantic Search batch
     del model
     model = HnswlibSimilarity()
-    model.load_index('hnsw_model.index')
+    model.load_index(index_file)
     print(model.most_similar("men喜欢这首歌"))
     queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
     res = model.most_similar(queries, topn=3)
@@ -75,7 +79,7 @@ def hnswlib_demo():
         for corpus_id, s in c.items():
             print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
 
-    # os.remove('hnsw_model.bin')
+    os.remove(index_file)
     print('-' * 50 + '\n')
 
 

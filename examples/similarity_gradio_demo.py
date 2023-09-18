@@ -4,9 +4,9 @@
 @description: pip install gradio
 """
 import gradio as gr
-from similarities import Similarity
+from similarities import BertSimilarity
 
-sim_model = Similarity()
+sim_model = BertSimilarity()
 
 
 def ai_text(sentence1, sentence2):

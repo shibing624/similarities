@@ -23,7 +23,7 @@ class SimScoreTestCase(unittest.TestCase):
         self.assertTrue(abs(r - 0.4098) < 0.001)
 
     def test_empty(self):
-        v = m._get_vector("This is test1")
+        v = m.get_embeddings("This is test1")
         print(v[:10], v.shape)
         print(m.similarity("This is a test1", "that is a test5"))
         print(m.distance("This is a test1", "that is a test5"))

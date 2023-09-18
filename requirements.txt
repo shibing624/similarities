@@ -1,8 +1,7 @@
-text2vec>=1.1.5
+sentence-transformers
 jieba>=0.39
 loguru
 transformers
 Pillow
-hnswlib
-annoy
 opencv-python
+autofaiss

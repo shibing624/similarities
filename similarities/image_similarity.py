@@ -13,9 +13,10 @@ from typing import List, Union, Dict
 import numpy as np
 from PIL import Image
 from loguru import logger
+from sentence_transformers import SentenceTransformer
+from sentence_transformers.util import cos_sim, semantic_search, dot_score
 from tqdm import tqdm
 
-from similarities.clip_model import CLIPModel
 from similarities.similarity import SimilarityABC
 from similarities.utils.distance import hamming_distance
 from similarities.utils.imagehash import phash, dhash, whash, average_hash
@@ -37,7 +38,7 @@ class ClipSimilarity(SimilarityABC):
             corpus: Union[List[Image.Image], Dict[str, Image.Image]] = None,
             model_name_or_path='OFA-Sys/chinese-clip-vit-base-patch16'
     ):
-        self.clip_model = CLIPModel(model_name_or_path)  # load the CLIP model
+        self.clip_model = SentenceTransformer(model_name_or_path)  # load the CLIP model from SentenceTransformer
         self.score_functions = {'cos_sim': cos_sim, 'dot': dot_score}
         self.corpus = {}
         self.corpus_embeddings = []
@@ -60,10 +61,10 @@ class ClipSimilarity(SimilarityABC):
             img = img.convert('RGB')
         return img
 
-    def _get_vector(
+    def get_embeddings(
             self,
             text_or_img: Union[List[Image.Image], Image.Image, str, List[str]],
-            batch_size: int = 128,
+            batch_size: int = 32,
             show_progress_bar: bool = False,
     ):
         """
@@ -101,7 +102,7 @@ class ClipSimilarity(SimilarityABC):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
-        corpus_embeddings = self._get_vector(list(corpus_new.values()), show_progress_bar=True).tolist()
+        corpus_embeddings = self.get_embeddings(list(corpus_new.values()), show_progress_bar=True).tolist()
         if self.corpus_embeddings:
             self.corpus_embeddings += corpus_embeddings
         else:
@@ -125,8 +126,8 @@ class ClipSimilarity(SimilarityABC):
             raise ValueError(f"score function: {score_function} must be either (cos_sim) for cosine similarity"
                              " or (dot) for dot product")
         score_function = self.score_functions[score_function]
-        text_emb1 = self._get_vector(a)
-        text_emb2 = self._get_vector(b)
+        text_emb1 = self.get_embeddings(a)
+        text_emb2 = self.get_embeddings(b)
 
         return score_function(text_emb1, text_emb2)
 
@@ -148,7 +149,7 @@ class ClipSimilarity(SimilarityABC):
         result = {qid: {} for qid, query in queries.items()}
         queries_ids_map = {i: id for i, id in enumerate(list(queries.keys()))}
         queries_texts = list(queries.values())
-        queries_embeddings = self._get_vector(queries_texts)
+        queries_embeddings = self.get_embeddings(queries_texts)
         corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
         all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn)
         for idx, hits in enumerate(all_hits):

@@ -8,10 +8,10 @@ from typing import List, Union, Dict
 
 from loguru import logger
 
-from similarities.similarity import Similarity
+from similarities.text_similarity import BertSimilarity
 
 
-class AnnoySimilarity(Similarity):
+class AnnoySimilarity(BertSimilarity):
     """
     Computes cosine similarities between word embeddings and retrieves most
     similar query for a given docs with Annoy.
@@ -63,7 +63,7 @@ class AnnoySimilarity(Similarity):
                 self.build_index()
             self.index.save(index_path)
             corpus_emb_json_path = index_path + ".json"
-            super().save_index(corpus_emb_json_path)
+            super().save_embeddings(corpus_emb_json_path)
             logger.info(f"Saving Annoy index to: {index_path}, corpus embedding to: {corpus_emb_json_path}")
         else:
             logger.warning("No index path given. Index not saved.")
@@ -73,7 +73,7 @@ class AnnoySimilarity(Similarity):
         if index_path and os.path.exists(index_path):
             corpus_emb_json_path = index_path + ".json"
             logger.info(f"Loading index from: {index_path}, corpus embedding from: {corpus_emb_json_path}")
-            super().load_index(corpus_emb_json_path)
+            super().load_embeddings(corpus_emb_json_path)
             if self.index is None:
                 self.create_index()
             self.index.load(index_path)
@@ -97,7 +97,7 @@ class AnnoySimilarity(Similarity):
             queries = {id: query for id, query in enumerate(queries)}
         result = {qid: {} for qid, query in queries.items()}
         queries_texts = list(queries.values())
-        queries_embeddings = self._get_vector(queries_texts)
+        queries_embeddings = self.get_embeddings(queries_texts)
         # Annoy get_nns_by_vector can only search for one vector at a time
         for idx, (qid, query) in enumerate(queries.items()):
             corpus_ids, distances = self.index.get_nns_by_vector(queries_embeddings[idx], topn, include_distances=True)
@@ -108,7 +108,7 @@ class AnnoySimilarity(Similarity):
         return result
 
 
-class HnswlibSimilarity(Similarity):
+class HnswlibSimilarity(BertSimilarity):
     """
     Computes cosine similarities between word embeddings and retrieves most
     similar query for a given docs with Hnswlib.
@@ -168,7 +168,7 @@ class HnswlibSimilarity(Similarity):
                 self.build_index()
             self.index.save_index(index_path)
             corpus_emb_json_path = index_path + ".json"
-            super().save_index(corpus_emb_json_path)
+            super().save_embeddings(corpus_emb_json_path)
             logger.info(f"Saving hnswlib index to: {index_path}, corpus embedding to: {corpus_emb_json_path}")
         else:
             logger.warning("No index path given. Index not saved.")
@@ -178,7 +178,7 @@ class HnswlibSimilarity(Similarity):
         if index_path and os.path.exists(index_path):
             corpus_emb_json_path = index_path + ".json"
             logger.info(f"Loading index from: {index_path}, corpus embedding from: {corpus_emb_json_path}")
-            super().load_index(corpus_emb_json_path)
+            super().load_embeddings(corpus_emb_json_path)
             if self.index is None:
                 self.create_index()
             self.index.load_index(index_path)
@@ -202,7 +202,7 @@ class HnswlibSimilarity(Similarity):
             queries = {id: query for id, query in enumerate(queries)}
         result = {qid: {} for qid, query in queries.items()}
         queries_texts = list(queries.values())
-        queries_embeddings = self._get_vector(queries_texts)
+        queries_embeddings = self.get_embeddings(queries_texts)
         # We use hnswlib knn_query method to find the top_k_hits
         corpus_ids, distances = self.index.knn_query(queries_embeddings, k=topn)
         # We extract corpus ids and scores for each query

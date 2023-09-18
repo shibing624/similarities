@@ -277,7 +277,7 @@ search top 3:
 
 ### 5. 图像相似度计算和匹配搜索
 
-支持[CLIP](similarities/imagesim.py)、pHash、SIFT等算法的图像相似度计算和匹配搜索。
+支持[CLIP](similarities/image_similarity.py)、pHash、SIFT等算法的图像相似度计算和匹配搜索。
 
 example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/image_semantic_search_demo.py)
 
@@ -326,7 +326,7 @@ sim_and_search(SiftSimilarity())
 output:
 
 ```shell
-Similarity: ClipSimilarity, matching_model: CLIPModel
+Similarity: ClipSimilarity, matching_model: ClipModule
 sim scores:  tensor([[0.9580, 0.8654],
         [0.6558, 0.6145]])
 

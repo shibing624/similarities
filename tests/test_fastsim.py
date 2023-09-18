@@ -8,8 +8,8 @@ import sys
 import unittest
 
 sys.path.append('..')
-from similarities.fastsim import AnnoySimilarity
-from similarities.fastsim import HnswlibSimilarity
+from similarities.fast_text_similarity import AnnoySimilarity
+from similarities.fast_text_similarity import HnswlibSimilarity
 
 
 class FastTestCase(unittest.TestCase):
@@ -52,7 +52,7 @@ class FastTestCase(unittest.TestCase):
         corpus_new = [i + str(id) for id, i in enumerate(list_of_docs * 10)]
         m = AnnoySimilarity(corpus=list_of_docs * 10)
         print(m)
-        v = m._get_vector("This is test1")
+        v = m.get_embeddings("This is test1")
         print(v[:10], v.shape)
         print(m.similarity("This is a test1", "that is a test5"))
         print(m.distance("This is a test1", "that is a test5"))
