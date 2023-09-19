@@ -8,8 +8,8 @@ import sys
 import unittest
 
 sys.path.append('..')
-from similarities.fast_text_similarity import AnnoySimilarity
-from similarities.fast_text_similarity import HnswlibSimilarity
+from similarities.fast_bert_similarity import AnnoySimilarity
+from similarities.fast_bert_similarity import HnswlibSimilarity
 
 
 class FastTestCase(unittest.TestCase):

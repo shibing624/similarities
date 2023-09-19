@@ -8,7 +8,7 @@ from typing import List, Union, Dict
 
 from loguru import logger
 
-from similarities.text_similarity import BertSimilarity
+from similarities.bert_similarity import BertSimilarity
 
 
 class AnnoySimilarity(BertSimilarity):

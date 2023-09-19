@@ -12,7 +12,7 @@ Similarities is a toolkit for similarity calculation and semantic search, suppor
 
 similarities：相似度计算、语义匹配搜索工具包。
 
-**similarities** 实现了多种相似度计算、匹配搜索算法，支持文本、图像，python3开发，pip安装，开箱即用。
+**similarities** 实现了多种相似度计算、语义匹配检索算法，支持海量数据文搜文、文搜图、图搜文多种场景，python3开发，pip安装，开箱即用。
 
 **Guide**
 
@@ -30,14 +30,14 @@ similarities：相似度计算、语义匹配搜索工具包。
 - 点积（Dot Product）：两向量归一化后求内积
 - 汉明距离（Hamming Distance），编辑距离（Levenshtein Distance），欧氏距离（Euclidean Distance），曼哈顿距离（Manhattan Distance）等
 
-#### 语义模型
-- [CoSENT文本匹配模型](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L79)【推荐】
+#### 语义匹配模型
+- CoSENT文本匹配模型(基于text2vec实现)【推荐】
 - BERT模型（文本向量表征）
 - SentenceBERT文本匹配模型
 
 
-#### 字面模型
-- [Word2Vec文本浅层语义表征](https://github.com/shibing624/similarities/blob/main/similarities/literalsim.py#L374)【推荐】
+#### 字面匹配模型
+- Word2Vec文本浅层语义表征(基于text2vec实现)【推荐】
 - 同义词词林
 - 知网Hownet义原匹配
 - BM25、RankBM25
@@ -45,22 +45,22 @@ similarities：相似度计算、语义匹配搜索工具包。
 - SimHash
 
 ### 图像相似度计算（图像匹配）
-#### 语义模型
-- [CLIP(Contrastive Language-Image Pre-Training)](https://github.com/shibing624/similarities/blob/main/similarities/imagesim.py#L25)
-- VGG(doing)
-- ResNet(doing)
+#### 图像语义匹配模型、图文相似度计算
+- 英文CLIP(Contrastive Language-Image Pre-Training)模型：OpenAI提出的图文匹配模型，可用于图文特征（embeddings）、相似度计算、图文检索、零样本图片分类，支持[openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32)等CLIP系列模型，原生支持英文
+- 中文CLIP模型：阿里基于~2亿图文对训练，发布的中文CLIP模型，支持[OFA-Sys/chinese-clip-vit-base-patch16](https://huggingface.co/OFA-Sys/chinese-clip-vit-base-patch16)等Chinese-CLIP系列模型，中文效果较好
 
-#### 特征提取
-- [pHash](https://github.com/shibing624/similarities/blob/main/similarities/imagesim.py#L164)【推荐】, dHash, wHash, aHash
+#### 图像特征提取
+- pHash【推荐】
+- dHash, wHash, aHash
 - SIFT, Scale Invariant Feature Transform(SIFT)
 - SURF, Speeded Up Robust Features(SURF)(doing)
 
-### 图文相似度计算
-- [CLIP(Contrastive Language-Image Pre-Training)](https://github.com/shibing624/similarities/blob/main/similarities/imagesim.py#L25)
 
-### 匹配搜索
-- [SemanticSearch](https://github.com/shibing624/similarities/blob/main/similarities/similarity.py#L185)：向量相似检索，使用Cosine
-  Similarty + topk高效计算，比一对一暴力计算快一个数量级
+### 图像检索
+- SemanticSearch：向量相似检索，基于torch的gpu矩阵高效计算，用Cosine Similarty + topk高效计算，比一对一暴力计算快一个数量级，支持百万数据高效检索
+- Faiss：ANN/KNN向量相似检索，支持亿级数据高效检索
+- hnswlib
+- annoy
 
 # Demo
 
@@ -82,14 +82,6 @@ Semantic Search Demo: https://huggingface.co/spaces/shibing624/similarities
 | Text2vec | 31.93 | 42.67 | 70.16 | 17.21 | 79.30 | **48.25** | 2572 |
 
 > 结果值使用spearman系数
-
-Model:
-- Cilin
-- Hownet
-- SimHash
-- TFIDF
-
-
 
 # Install
 
@@ -346,7 +338,11 @@ search top 3:
 
 ### 6. 图文互搜
 
-CLIP 模型不仅支持以图搜图，还支持中英文图文互搜：
+CLIP 模型不仅支持以图搜图，还支持中英文图文互搜。
+
+example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/image_semantic_search_demo.py)
+
+
 ```python
 import sys
 import glob
