@@ -1,7 +1,8 @@
-sentence-transformers
+text2vec>=1.2.8
 jieba>=0.39
 loguru
 transformers
 Pillow
 opencv-python
 autofaiss
+fire

@@ -13,10 +13,10 @@ from typing import List, Union, Dict
 import numpy as np
 from PIL import Image
 from loguru import logger
-from sentence_transformers import SentenceTransformer
-from sentence_transformers.util import cos_sim, semantic_search, dot_score
 from tqdm import tqdm
 
+
+from similarities.clip_module import ClipModule
 from similarities.similarity import SimilarityABC
 from similarities.utils.distance import hamming_distance
 from similarities.utils.imagehash import phash, dhash, whash, average_hash
@@ -38,7 +38,7 @@ class ClipSimilarity(SimilarityABC):
             corpus: Union[List[Image.Image], Dict[str, Image.Image]] = None,
             model_name_or_path='OFA-Sys/chinese-clip-vit-base-patch16'
     ):
-        self.clip_model = SentenceTransformer(model_name_or_path)  # load the CLIP model from SentenceTransformer
+        self.clip_model = ClipModule(model_name_or_path)  # load the CLIP model
         self.score_functions = {'cos_sim': cos_sim, 'dot': dot_score}
         self.corpus = {}
         self.corpus_embeddings = []

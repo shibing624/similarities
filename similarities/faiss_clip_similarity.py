@@ -6,33 +6,25 @@
 import base64
 import json
 import os
-import sys
 from io import BytesIO
-from shutil import copytree
-from typing import List
-from typing import Optional
+from typing import Optional, Sequence, Union
 
-import cv2
 import faiss
 import fire
 import numpy as np
 import pandas as pd
 import requests
-import uvicorn
 from PIL import Image
-from fastapi import FastAPI
 from loguru import logger
-from pydantic import BaseModel, Field
-from sentence_transformers import SentenceTransformer
-from sentence_transformers.util import cos_sim
-from starlette.middleware.cors import CORSMiddleware
-from tqdm import tqdm
+
+from similarities.clip_module import ClipModule
+from similarities.utils.util import cos_sim
 
 
 def load_data(data, header=None, columns=('image_path', 'text'), delimiter='\t'):
     """
     Encoding data_list text
-    @param data: list of (image_path, text)
+    @param data: list of (image_path, text) or DataFrame or file path
     @param header: read_csv header
     @param columns: read_csv names
     @param delimiter: read_csv sep
@@ -49,150 +41,76 @@ def load_data(data, header=None, columns=('image_path', 'text'), delimiter='\t')
     return data_df
 
 
-def is_link(s):
-    return s is not None and s.startswith('http')
-
-
-def img_decode(content: bytes):
-    np_arr = np.frombuffer(content, dtype=np.uint8)
-    return cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
-
-
-def download_with_progressbar(url, save_path):
-    response = requests.get(url, stream=True)
-    if response.status_code == 200:
-        total_size_in_bytes = int(response.headers.get('content-length', 1))
-        block_size = 1024  # 1 Kibibyte
-        progress_bar = tqdm(
-            total=total_size_in_bytes, unit='iB', unit_scale=True)
-        with open(save_path, 'wb') as file:
-            for data in response.iter_content(block_size):
-                progress_bar.update(len(data))
-                file.write(data)
-        progress_bar.close()
+def preprocess_image(image_input: Union[str, np.ndarray, bytes]) -> Image.Image:
+    """
+    Process image input to Image.Image object
+    """
+    if isinstance(image_input, str):
+        if image_input.startswith('http'):
+            return Image.open(requests.get(image_input, stream=True).raw)
+        else:
+            return Image.open(image_input)
+    elif isinstance(image_input, np.ndarray):
+        return Image.fromarray(image_input)
+    elif isinstance(image_input, bytes):
+        img_data = base64.b64decode(image_input)
+        return Image.open(BytesIO(img_data))
     else:
-        logger.error("Something went wrong while downloading models")
-        sys.exit(0)
-
-
-def check_img(img):
-    if isinstance(img, bytes):
-        img = img_decode(img)
-    if isinstance(img, str):
-        # download net image
-        if is_link(img):
-            download_with_progressbar(img, 'tmp.jpg')
-            img = 'tmp.jpg'
-        image_file = img
-        with open(image_file, 'rb') as f:
-            img_str = f.read()
-            img = img_decode(img_str)
-        if img is None:
-            try:
-                buf = BytesIO()
-                image = BytesIO(img_str)
-                im = Image.open(image)
-                rgb = im.convert('RGB')
-                rgb.save(buf, 'jpeg')
-                buf.seek(0)
-                image_bytes = buf.read()
-                data_base64 = str(base64.b64encode(image_bytes),
-                                  encoding="utf-8")
-                image_decode = base64.b64decode(data_base64)
-                img_array = np.frombuffer(image_decode, np.uint8)
-                img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-            except:
-                logger.error("error in loading image:{}".format(image_file))
-                return None
-        if img is None:
-            logger.error("error in loading image:{}".format(image_file))
-            return None
-    if isinstance(img, np.ndarray) and len(img.shape) == 2:
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-
-    return img
-
-
-def alpha_to_color(img, alpha_color=(255, 255, 255)):
-    if len(img.shape) == 3 and img.shape[2] == 4:
-        B, G, R, A = cv2.split(img)
-        alpha = A / 255
-
-        R = (alpha_color[0] * (1 - alpha) + R * alpha).astype(np.uint8)
-        G = (alpha_color[1] * (1 - alpha) + G * alpha).astype(np.uint8)
-        B = (alpha_color[2] * (1 - alpha) + B * alpha).astype(np.uint8)
-
-        img = cv2.merge((B, G, R))
-    return img
-
-
-def preprocess_image(img, alpha_color=(255, 255, 255)):
-    """
-    preprocess image
-    :param img:
-    :param alpha_color:
-    :return:
-    """
-    img = check_img(img)
-    if img is None:
-        return None
-    img = alpha_to_color(img, alpha_color)
-    return img
+        raise ValueError("Unsupported image input type")
 
 
 def clip_embedding(
         input_data_or_path: str,
-        columns: List[str] = ('image_path', 'text'),
-        header: int = None,
+        columns: Optional[Sequence[str]] = ('image_path', 'text'),
+        header: Optional[int] = None,
         delimiter: str = '\t',
-        image_embeddings_dir: str = 'image_embeddings_dir/',
-        text_embeddings_dir: str = 'text_embeddings_dir/',
+        image_embeddings_dir: Optional[str] = 'tmp_image_embeddings_dir/',
+        text_embeddings_dir: Optional[str] = 'tmp_text_embeddings_dir/',
         embeddings_name: str = 'emb.npy',
-        corpus_file: str = 'corpus.csv',
+        corpus_file: str = 'tmp_data_dir/corpus.csv',
         model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16",
         batch_size: int = 32,
         enable_image: bool = True,
-        enabel_text: bool = True,
-        device: str = None
+        enabel_text: bool = False,
+        device: Optional[str] = None,
 ):
+    """Embedding text and image with clip model"""
     df = load_data(input_data_or_path, header=header, columns=columns, delimiter=delimiter)
-    logger.info(f'Load data success. data num: {len(df)}, top3: {df[:3]}')
+    logger.info(f'Load data success. data num: {len(df)}, top3: {df.head(3)}')
     images = df['image_path'].tolist()
     texts = df['text'].tolist()
-    model = SentenceTransformer(model_name_or_path=model_name, device=device)
-    logger.info(f'Load model success. model: {model}')
+    model = ClipModule(model_name=model_name, device=device)
+    logger.info(f'Load model success. model: {model_name}')
 
     # Start the multi processes pool on all available CUDA devices
     if enable_image:
         os.makedirs(image_embeddings_dir, exist_ok=True)
-        pool = model.start_multi_process_pool()
         images = [preprocess_image(img) for img in images]
-        image_emb = model.encode_multi_process(images, pool, batch_size=batch_size)
+        image_emb = model.encode(images, batch_size=batch_size, show_progress_bar=True)
         logger.info(f"Embeddings computed. Shape: {image_emb.shape}")
-        model.stop_multi_process_pool(pool)
         image_embeddings_file = os.path.join(image_embeddings_dir, embeddings_name)
         np.save(image_embeddings_file, image_emb)
         logger.debug(f"Embeddings saved to {image_embeddings_file}")
     if enabel_text:
         os.makedirs(text_embeddings_dir, exist_ok=True)
-        pool = model.start_multi_process_pool()
-        text_emb = model.encode_multi_process(texts, pool, batch_size=batch_size)
+        text_emb = model.encode(texts, batch_size=batch_size, show_progress_bar=True)
         logger.info(f"Embeddings computed. Shape: {text_emb.shape}")
-        model.stop_multi_process_pool(pool)
         text_embeddings_file = os.path.join(text_embeddings_dir, embeddings_name)
         np.save(text_embeddings_file, text_emb)
         logger.debug(f"Embeddings saved to {text_embeddings_file}")
 
     # Save corpus
-    df.to_csv(corpus_file, index=False)
-    logger.debug(f"data saved to {corpus_file}")
+    if corpus_file:
+        os.makedirs(os.path.dirname(corpus_file), exist_ok=True)
+        df.to_csv(corpus_file, index=False)
+        logger.debug(f"data saved to {corpus_file}")
 
 
 def clip_index(
-        image_embeddings_dir: str = None,
-        text_embeddings_dir: str = None,
-        image_index_dir: str = "image_index_dir/",
-        text_index_dir: str = "text_index_dir/",
+        image_embeddings_dir: Optional[str] = None,
+        text_embeddings_dir: Optional[str] = None,
+        image_index_dir: Optional[str] = "tmp_image_index_dir/",
+        text_index_dir: Optional[str] = "tmp_text_index_dir/",
         index_name: str = "faiss.index",
         max_index_memory_usage: str = "4G",
         current_memory_available: str = "16G",
@@ -223,6 +141,7 @@ def clip_index(
             logger.info(f"Index {image_embeddings_dir} done, saved in {index_file}, index infos in {index_infos_path}")
         except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Index {image_embeddings_dir} failed, {e}")
+            raise e
     else:
         logger.warning(f"Embeddings dir {image_embeddings_dir} not exist")
 
@@ -247,11 +166,12 @@ def clip_index(
             logger.info(f"Index {text_embeddings_dir} done, saved in {index_file}, index infos in {index_infos_path}")
         except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Index {text_embeddings_dir} failed, {e}")
+            raise e
     else:
         logger.warning(f"Embeddings dir {text_embeddings_dir} not exist")
 
 
-def search_index(
+def _search_index(
         query,
         model,
         index,
@@ -265,7 +185,10 @@ def search_index(
         img = Image.open(query)
         query_features = model.encode([img], normalize_embeddings=True)
     else:
-        query_features = model.encode([query], normalize_embeddings=True)
+        inputs = query
+        if isinstance(query, str):
+            inputs = [query]
+        query_features = model.encode(inputs, normalize_embeddings=True)
 
     if threshold is not None:
         _, d, i = index.range_search(query_features, threshold)
@@ -288,7 +211,7 @@ def search_index(
     # Sorted faiss search result with distance
     text_scores = []
     for ed, ei in zip(d, i):
-        item = df.iloc[ei]
+        item = df.iloc[ei].to_dict()
         logger.debug(f"Found: {item}, similarity: {ed}, id: {ei}")
         text_scores.append((item, float(ed), int(ei)))
     # Sort by score desc
@@ -297,55 +220,63 @@ def search_index(
 
 def clip_filter(
         query,
-        output_dir: str = "outputs/",
+        output_file: str = "tmp_outputs/result.json",
         model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16",
-        index_dir: str = 'image_index_dir/',
+        index_dir: str = 'tmp_image_index_dir/',
         index_name: str = "faiss.index",
-        corpus_file: str = 'corpus.csv',
+        corpus_file: str = 'tmp_data_dir/corpus.csv',
         num_results: int = 10,
-        threshold: float = None,
-        device: str = None,
+        threshold: Optional[float] = None,
+        device: Optional[str] = None,
 ):
     """Entry point of clip filter"""
     assert isinstance(query, (np.ndarray, list, str, bytes))
 
-    model = SentenceTransformer(model_name_or_path=model_name, device=device)
-    df = pd.read_csv(corpus_file)
     index_file = os.path.join(index_dir, index_name)
+    assert os.path.exists(index_file), f"index file {index_file} not exist"
     index = faiss.read_index(index_file)
-    logger.info(f'Load model success. model: {model}, index: {index}, data size: {len(df)}')
-    os.makedirs(output_dir, exist_ok=True)
-    sorted_text_scores = search_index(query, model, index, df, num_results, threshold)
+    model = ClipModule(model_name=model_name, device=device)
+    df = pd.read_csv(corpus_file)
+    logger.info(f'Load model success. model: {model_name}, index: {index}, data size: {len(df)}')
+    sorted_text_scores = _search_index(query, model, index, df, num_results, threshold)
     # Save results
-    output_file = os.path.join(output_dir, 'result.json')
-    with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(
-            {'query': query,
-             'results': [{'item': i, 'similarity': j, 'id': k} for i, j, k in sorted_text_scores]},
-            f,
-            ensure_ascii=False,
-            indent=2
-        )
-    logger.info(f"Query: {query}, saved result to {output_file}")
+    if output_file:
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(
+                {'query': query,
+                 'results': [{'sentence': i, 'similarity': j, 'id': k} for i, j, k in sorted_text_scores]},
+                f,
+                ensure_ascii=False,
+                indent=2
+            )
+        logger.info(f"Query: {query}, saved result to {output_file}")
+    return sorted_text_scores
 
 
 def clip_server(
         model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16",
-        index_dir: str = 'image_index_dir/',
+        index_dir: str = 'tmp_image_index_dir/',
         index_name: str = "faiss.index",
-        corpus_file: str = 'corpus.csv',
+        corpus_file: str = 'tmp_data_dir/corpus.csv',
         num_results: int = 10,
-        threshold: float = None,
-        device: str = None,
+        threshold: Optional[float] = None,
+        device: Optional[str] = None,
         port: int = 8002,
 ):
     """main entry point of clip search backend, start the endpoints"""
+    import uvicorn
+    from fastapi import FastAPI
+    from pydantic import BaseModel, Field
+    from starlette.middleware.cors import CORSMiddleware
+
     print("starting boot of clip serve")
-    model = SentenceTransformer(model_name_or_path=model_name, device=device)
-    df = pd.read_csv(corpus_file)
     index_file = os.path.join(index_dir, index_name)
+    assert os.path.exists(index_file), f"index file {index_file} not exist"
     index = faiss.read_index(index_file)
-    logger.info(f'Load model success. model: {model}, index: {index}, data size: {len(df)}')
+    model = ClipModule(model_name=model_name, device=device)
+    df = pd.read_csv(corpus_file)
+    logger.info(f'Load model success. model: {model_name}, index: {index}, data size: {len(df)}')
 
     # define the app
     app = FastAPI()
@@ -394,7 +325,7 @@ def clip_server(
     async def search(item: Item):
         try:
             q = item.input
-            sorted_text_scores = search_index(q, model, index, df, num_results, threshold)
+            sorted_text_scores = _search_index(q, model, index, df, num_results, threshold)
             result_dict = {'result': sorted_text_scores}
             logger.debug(f"Successfully search done, q:{q}")
             return result_dict
@@ -404,63 +335,6 @@ def clip_server(
 
     logger.info("Server starting!")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-def quantize(emb_folder, index_folder, index_name, max_index_memory_usage, current_memory_available, nb_cores):
-    """calls autofaiss to build an index"""
-
-    from autofaiss import build_index  # pylint: disable=import-outside-toplevel
-
-    try:
-        logger.debug(f"starting index {index_name}")
-        if os.path.exists(emb_folder):
-            logger.debug(
-                f"embedding path exist, building index {index_name}"
-                f"using embeddings {emb_folder} ; saving in {index_folder}"
-            )
-            build_index(
-                embeddings=emb_folder,
-                index_path=index_folder + "/" + index_name + ".index",
-                index_infos_path=index_folder + "/" + index_name + ".json",
-                max_index_memory_usage=max_index_memory_usage,
-                current_memory_available=current_memory_available,
-                nb_cores=nb_cores,
-            )
-            logger.debug(f"index {index_name} done")
-    except Exception as e:  # pylint: disable=broad-except
-        logger.exception(f"index {index_name} failed")
-        raise e
-
-
-def clip_index(
-        embeddings_folder,
-        index_folder,
-        max_index_memory_usage="4G",
-        current_memory_available="16G",
-        copy_metadata=True,
-        image_subfolder="img_emb",
-        text_subfolder="text_emb",
-        nb_cores=None,
-):
-    """indexes clip embeddings using autofaiss"""
-    quantize(
-        embeddings_folder + "/" + image_subfolder,
-        index_folder,
-        "image",
-        max_index_memory_usage,
-        current_memory_available,
-        nb_cores,
-    )
-    quantize(
-        embeddings_folder + "/" + text_subfolder,
-        index_folder,
-        "text",
-        max_index_memory_usage,
-        current_memory_available,
-        nb_cores,
-    )
-    if copy_metadata:
-        copytree(embeddings_folder + "/metadata", index_folder + "/metadata")
 
 
 def main():

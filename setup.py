@@ -37,13 +37,13 @@ setup(
     ],
     keywords='similarities,Chinese Text Similarity Calculation Tool,similarity,word2vec',
     install_requires=[
-        "text2vec>=1.1.5",
-        "sentence-transformers",
+        "text2vec>=1.2.8",
         "jieba>=0.39",
         "loguru",
         "Pillow",
         "fire",
         "autofaiss",
+        "transformers",
     ],
     packages=find_packages(),
 )

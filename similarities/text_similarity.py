@@ -14,8 +14,8 @@ from typing import List, Union, Dict
 
 import numpy as np
 from loguru import logger
-from sentence_transformers import SentenceTransformer
-from sentence_transformers.util import cos_sim, semantic_search, dot_score
+from text2vec import SentenceModel
+from similarities.utils.util import cos_sim, semantic_search, dot_score
 
 from similarities.similarity import SimilarityABC
 
@@ -48,7 +48,7 @@ class BertSimilarity(SimilarityABC):
         :param device: Device (like 'cuda' / 'cpu') to use for the computation.
         """
         if isinstance(model_name_or_path, str):
-            self.sentence_model = SentenceTransformer(
+            self.sentence_model = SentenceModel(
                 model_name_or_path,
                 device=device
             )
