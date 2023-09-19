@@ -13,8 +13,6 @@ from torch import nn
 from tqdm import trange
 from transformers import ChineseCLIPProcessor, ChineseCLIPModel, CLIPProcessor, CLIPModel
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 class ClipModule(nn.Module):
     """
@@ -25,16 +23,31 @@ class ClipModule(nn.Module):
             chinese model url: https://huggingface.co/OFA-Sys/chinese-clip-vit-base-patch16
             english model url: https://huggingface.co/openai/clip-vit-base-patch32
         processor_name: str, default None
+        device: str, default None
+        is_chinese_model: bool, default None, if None, auto detect by model_name
     """
 
-    def __init__(self, model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16", processor_name=None):
+    def __init__(
+            self,
+            model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16",
+            processor_name: str = None,
+            device: str = None,
+            is_chinese_model: bool = None,
+    ):
         super(ClipModule, self).__init__()
+        if device is None:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            self.device = device
         self.model_name = model_name
         if processor_name is None:
             processor_name = model_name
-        if 'chinese' in model_name:
-            self.processor = ChineseCLIPProcessor.from_pretrained(processor_name)
+        if is_chinese_model is None:
+            is_chinese_model = 'chinese' in model_name
+        self.is_chinese_model = is_chinese_model
+        if is_chinese_model:
             self.model = ChineseCLIPModel.from_pretrained(model_name)
+            self.processor = ChineseCLIPProcessor.from_pretrained(processor_name)
         else:
             self.model = CLIPModel.from_pretrained(model_name)
             self.processor = CLIPProcessor.from_pretrained(processor_name)
@@ -58,7 +71,12 @@ class ClipModule(nn.Module):
                 output_attentions=features.get('output_attentions', None),
                 output_hidden_states=features.get('output_hidden_states', None),
             )
-            text_embeds = self.model.text_projection(text_outputs[1])
+            if self.is_chinese_model:
+                # refer chinese clip: https://github.com/huggingface/transformers/blob/main/src/transformers/models/chinese_clip/modeling_chinese_clip.py#L1431
+                pooled_output = text_outputs[0][:, 0, :]
+            else:
+                pooled_output = text_outputs[1]
+            text_embeds = self.model.text_projection(pooled_output)
 
         sentence_embedding = []
         image_features = iter(image_embeds)
@@ -80,7 +98,7 @@ class ClipModule(nn.Module):
         image_text_info = []
 
         for idx, data in enumerate(texts):
-            if isinstance(data, Image.Image):  # An Image
+            if isinstance(data, (Image.Image, np.ndarray)):  # An Image
                 images.append(data)
                 image_text_info.append(0)
             else:  # A text
@@ -121,7 +139,7 @@ class ClipModule(nn.Module):
             return sum([len(t) for t in text])  # Sum of length of individual strings
 
     @staticmethod
-    def batch_to_device(batch):
+    def batch_to_device(batch, device):
         """
         send a pytorch batch to a device (CPU/GPU)
         """
@@ -157,7 +175,7 @@ class ClipModule(nn.Module):
         if isinstance(sentences, str) or not hasattr(sentences, '__len__'):
             sentences = [sentences]
             input_was_string = True
-        self.model.to(device)
+        self.model.to(self.device)
 
         all_embeddings = []
         length_sorted_idx = np.argsort([-self._text_length(sent) for sent in sentences])
@@ -166,7 +184,7 @@ class ClipModule(nn.Module):
         for start_index in trange(0, len(sentences), batch_size, desc="Batches", disable=not show_progress_bar):
             sentences_batch = sentences_sorted[start_index:start_index + batch_size]
             features = self.tokenize(sentences_batch)
-            features = self.batch_to_device(features)
+            features = self.batch_to_device(features, self.device)
 
             with torch.no_grad():
                 out_features = self.forward(features)
