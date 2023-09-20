@@ -83,31 +83,37 @@ def clip_embedding(
     logger.info(f'Load data success. data num: {len(df)}, top3: {df.head(3)}')
     images = df['image_path'].tolist()
     texts = df['text'].tolist()
-    model = ClipModule(model_name=model_name, device=device)
+    model = ClipModule(model_name_or_path=model_name, device=device)
     logger.info(f'Load model success. model: {model_name}')
 
     # Start the multi processes pool on all available CUDA devices
     if enable_image:
         os.makedirs(image_embeddings_dir, exist_ok=True)
         images = [preprocess_image(img) for img in images]
-        image_emb = model.encode(
+        pool = model.start_multi_process_pool()
+        # Compute the embeddings using the multi processes pool
+        image_emb = model.encode_multi_process(
             images,
+            pool,
             batch_size=batch_size,
-            show_progress_bar=True,
-            normalize_embeddings=normalize_embeddings,
+            normalize_embeddings=normalize_embeddings
         )
+        model.stop_multi_process_pool(pool)
         logger.info(f"Embeddings computed. Shape: {image_emb.shape}")
         image_embeddings_file = os.path.join(image_embeddings_dir, embeddings_name)
         np.save(image_embeddings_file, image_emb)
         logger.debug(f"Embeddings saved to {image_embeddings_file}")
     if enabel_text:
         os.makedirs(text_embeddings_dir, exist_ok=True)
-        text_emb = model.encode(
+        pool = model.start_multi_process_pool()
+        # Compute the embeddings using the multi processes pool
+        text_emb = model.encode_multi_process(
             texts,
+            pool,
             batch_size=batch_size,
-            show_progress_bar=True,
-            normalize_embeddings=normalize_embeddings,
+            normalize_embeddings=normalize_embeddings
         )
+        model.stop_multi_process_pool(pool)
         logger.info(f"Embeddings computed. Shape: {text_emb.shape}")
         text_embeddings_file = os.path.join(text_embeddings_dir, embeddings_name)
         np.save(text_embeddings_file, text_emb)
@@ -248,25 +254,27 @@ def clip_filter(
     """Entry point of clip filter"""
     if texts is None and images is None and embeddings is None:
         raise ValueError("must fill one of texts, images and embeddings input")
+    index_file = os.path.join(index_dir, index_name)
+    assert os.path.exists(index_file), f"index file {index_file} not exist"
+    faiss_index = faiss.read_index(index_file)
+    model = ClipModule(model_name_or_path=model_name, device=device)
+    df = pd.read_csv(corpus_file)
+    logger.info(f'Load model success. model: {model_name}, index: {faiss_index}, data size: {len(df)}')
+
     queries = None
     if texts is not None and len(texts) > 0:
         queries = texts
+        logger.debug(f"Query: texts size {len(texts)}")
     elif images is not None and len(images) > 0:
         queries = [preprocess_image(img) for img in images]
+        logger.debug(f"Query: images size {len(images)}")
     elif embeddings is not None:
         queries = embeddings
         if isinstance(queries, list):
             queries = np.array(queries, dtype=np.float32)
         if len(queries.shape) == 1:
             queries = np.expand_dims(queries, axis=0)
-
-    index_file = os.path.join(index_dir, index_name)
-    assert os.path.exists(index_file), f"index file {index_file} not exist"
-    faiss_index = faiss.read_index(index_file)
-    model = ClipModule(model_name=model_name, device=device)
-    df = pd.read_csv(corpus_file)
-    logger.info(f'Load model success. model: {model_name}, index: {faiss_index}, data size: {len(df)}')
-
+        logger.debug(f"Query: embeddings shape {queries.shape}")
     result = batch_search_index(queries, model, faiss_index, df, num_results, threshold)
     # Save results
     if output_file:
@@ -340,7 +348,7 @@ def clip_server(
     index_file = os.path.join(index_dir, index_name)
     assert os.path.exists(index_file), f"index file {index_file} not exist"
     faiss_index = faiss.read_index(index_file)
-    model = ClipModule(model_name=model_name, device=device)
+    model = ClipModule(model_name_or_path=model_name, device=device)
     df = pd.read_csv(corpus_file)
     logger.info(f'Load model success. model: {model_name}, index: {faiss_index}, data size: {len(df)}')
 
@@ -404,10 +412,13 @@ def clip_server(
         try:
             if item.text is not None and len(item.text) > 0:
                 q = [item.text]
+                logger.debug(f"query: text {item.text}")
             elif item.image is not None and len(item.image) > 0:
                 q = [preprocess_image(item.image)]
+                logger.debug(f"query: image {item.image}")
             elif item.emb is not None:
                 q = item.emb
+                logger.debug(f"query: emb size {len(item.emb)}")
                 if isinstance(q, list):
                     q = np.array(q, dtype=np.float32)
                 if len(q.shape) == 1:
