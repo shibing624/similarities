@@ -402,9 +402,9 @@ def clip_server(
     @app.post('/search')
     async def search(item: SearchItem):
         try:
-            if item.text is not None:
+            if item.text is not None and len(item.text) > 0:
                 q = [item.text]
-            elif item.image is not None:
+            elif item.image is not None and len(item.image) > 0:
                 q = [preprocess_image(item.image)]
             elif item.emb is not None:
                 q = item.emb

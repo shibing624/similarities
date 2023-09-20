@@ -77,7 +77,7 @@ python3 setup.py install
 
 ## Usage
 
-### 1. 文本相似度计算
+### 1. 文本向量相似度计算
 
 example: [examples/text_similarity_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_similarity_demo.py)
 
@@ -90,39 +90,39 @@ r = m.similarity('如何更换花呗绑定银行卡', '花呗更改绑定银行�
 print(f"similarity score: {float(r)}")  # similarity score: 0.855146050453186
 ```
 
-### 2. 文本搜索
+- `model_name_or_path`：模型名称或者路径，默认会从HF model hub下载并使用中文语义匹配模型[shibing624/text2vec-base-chinese](https://huggingface.co/shibing624/text2vec-base-chinese)，如果需要多语言，可以替换为[shibing624/text2vec-base-multilingual](https://huggingface.co/shibing624/text2vec-base-multilingual)模型，支持中、英、韩、日、德、意等多国语言
 
-一般在文档候选集中找与query最相似的文本，常用于QA场景的问句相似匹配、文本搜索(百万内数据集)等任务。
+### 2. 文本向量搜索
+
+在文档候选集中找与query最相似的文本，常用于QA场景的问句相似匹配、文本搜索等任务。
+
+#### SemanticSearch精准搜索算法，Cos Similarity + topK 聚类检索，适合百万内数据集
 
 example: [examples/text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_semantic_search_demo.py)
 
-
-#### 多语言文本相似度计算和文本搜索
-
-使用[shibing624/text2vec-base-multilingual](https://huggingface.co/shibing624/text2vec-base-multilingual)模型，支持中、英、韩、日、德、意等多国语言
-
-example: [examples/text_semantic_search_multilingual_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_semantic_search_multilingual_demo.py)
-
-### 3. 近似文本搜索
-
-支持Annoy、Hnswlib的近似语义匹配搜索，常用于百万数据集的匹配搜索任务。
+#### Annoy、Hnswlib等近似搜索算法，适合百万级数据集
 
 example: [examples/fast_text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/fast_text_semantic_search_demo.py)
 
-### 4. 基于字面的文本相似度计算和文本搜索
+#### Faiss高效向量检索，适合亿级数据集
+example: [examples/faiss_bert_search_server_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_bert_search_server_demo.py)
+
+### 3. 基于字面的文本相似度计算和文本搜索
 
 支持同义词词林（Cilin）、知网Hownet、词向量（WordEmbedding）、Tfidf、SimHash、BM25等算法的相似度计算和字面匹配搜索，常用于文本匹配冷启动。
 
 example: [examples/literal_text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/literal_text_semantic_search_demo.py)
 
-### 5. 图像相似度计算和图片搜索
+### 4. 图像相似度计算和图片搜索
 
-支持CLIP、pHash、SIFT等算法的图像相似度计算和匹配搜索，中文 CLIP 模型支持图搜图，文搜图、还支持中英文图文互搜。
+支持CLIP、pHash、SIFT等算法的图像相似度计算和匹配搜索，中文CLIP模型支持图搜图，文搜图、还支持中英文图文互搜。
 
 example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/image_semantic_search_demo.py)
 
 ![image_sim](docs/image_sim.png)
 
+#### Faiss高效向量检索，适合亿级数据集
+example: [examples/faiss_clip_search_server_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_clip_search_server_demo.py)
 
 
 

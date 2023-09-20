@@ -6,3 +6,9 @@ Pillow
 opencv-python
 autofaiss
 fire
+fastapi
+uvicorn
+pydantic
+requests
+starlette
+gradio
