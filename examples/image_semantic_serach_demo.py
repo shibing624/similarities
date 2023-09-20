@@ -34,7 +34,8 @@ def sim_and_search(m):
 
 
 def clip_demo():
-    m = ClipSimilarity(model_name_or_path="openai/clip-vit-base-patch32")
+    m = ClipSimilarity(model_name_or_path="OFA-Sys/chinese-clip-vit-base-patch16")
+    # english model name: openai/clip-vit-base-patch32
     print(m)
     # similarity score between text and image
     image_fps = [
