@@ -34,13 +34,23 @@
 
 ### 文本相似度计算 + 文本搜索
 
-- 语义匹配模型【推荐】：本项目基于text2vec实现了CoSENT模型的文本相似度计算和文本搜索，支持中英文、多语言多种SentenceBERT类预训练模型，支持 Cos Similarity/Dot Product/Hamming Distance/Euclidean Distance 等多种相似度计算方法，支持 SemanticSearch/Faiss/Annoy/Hnsw 等多种文本搜索算法，支持亿级数据高效检索
+- 语义匹配模型【推荐】：本项目基于text2vec实现了CoSENT模型的文本相似度计算和文本搜索
+  - 支持中英文、多语言多种SentenceBERT类预训练模型
+  - 支持 Cos Similarity/Dot Product/Hamming Distance/Euclidean Distance 等多种相似度计算方法
+  - 支持 SemanticSearch/Faiss/Annoy/Hnsw 等多种文本搜索算法
+  - 支持亿级数据高效检索
 - 字面匹配模型：本项目实现了Word2Vec、BM25、RankBM25、TFIDF、SimHash、同义词词林、知网Hownet义原匹配等多种字面匹配模型
 
 
 ### 图像相似度计算/图文相似度计算 + 图搜图/文搜图
-- 英文CLIP(Contrastive Language-Image Pre-Training)模型：OpenAI提出的图文匹配模型，可用于图文特征（embeddings）、相似度计算、图文检索、零样本图片分类，本项目实现了[openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32)等CLIP系列模型的图文检索功能
-- 中文CLIP模型【推荐】：阿里使用~2亿图文对训练，发布的中文CLIP模型，支持[OFA-Sys/chinese-clip-vit-base-patch16](https://huggingface.co/OFA-Sys/chinese-clip-vit-base-patch16)等Chinese-CLIP系列模型，本项目基于PyTorch实现了中文CLIP模型的向量表征、构建索引（基于autofaiss）、批量检索、后台服务（基于Fastapi）、前端展现（基于gradio）功能
+- CLIP(Contrastive Language-Image Pre-Training)模型：图文匹配模型，可用于图文特征（embeddings）、相似度计算、图文检索、零样本图片分类，本项目基于PyTorch实现了CLIP模型的向量表征、构建索引（基于autofaiss）、批量检索、后台服务（基于Fastapi）、前端展现（基于gradio）功能
+  - 支持[openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32)等CLIP系列模型
+  - 支持[OFA-Sys/chinese-clip-vit-base-patch16](https://huggingface.co/OFA-Sys/chinese-clip-vit-base-patch16)等Chinese-CLIP系列模型
+  - 支持前后端分离部署
+  - 支持亿级数据高效检索
+  - 支持图搜图、文搜图、向量搜图
+  - 支持图像embedding提取、文本embedding提取
+  - 支持图像相似度计算、图文相似度计算
 - 图像特征提取：本项目基于cv2实现了pHash、dHash、wHash、aHash、SIFT等多种图像特征提取算法
 
 ## Demo
