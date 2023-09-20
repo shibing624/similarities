@@ -17,6 +17,7 @@ import requests
 from PIL import Image
 from loguru import logger
 from pydantic import BaseModel, Field
+from requests.exceptions import RequestException
 
 from similarities.clip_module import ClipModule
 from similarities.utils.util import cos_sim
@@ -138,8 +139,8 @@ def clip_index(
     """indexes text embeddings using autofaiss"""
     from autofaiss import build_index  # pylint: disable=import-outside-toplevel
 
-    logger.debug(f"Starting build index from {image_embeddings_dir}")
     if image_embeddings_dir and os.path.exists(image_embeddings_dir):
+        logger.debug(f"Starting build index from {image_embeddings_dir}")
         logger.debug(
             f"Embedding path exist, building index "
             f"using embeddings {image_embeddings_dir} ; saving in {image_index_dir}"
@@ -163,8 +164,8 @@ def clip_index(
     else:
         logger.warning(f"Embeddings dir {image_embeddings_dir} not exist")
 
-    logger.debug(f"Starting build index from {text_embeddings_dir}")
     if text_embeddings_dir and os.path.exists(text_embeddings_dir):
+        logger.debug(f"Starting build index from {text_embeddings_dir}")
         logger.debug(
             f"Embedding path exist, building index "
             f"using embeddings {text_embeddings_dir} ; saving in {text_index_dir}"
@@ -229,7 +230,7 @@ def batch_search_index(
             item = df.iloc[ei].to_dict()
             if debug:
                 logger.debug(f"Found: {item}, similarity: {ed}, id: {ei}")
-            text_scores.append((item, float(ed), int(ei)))
+            text_scores.append((item, str(ed), int(ei)))
         # Sort by score desc
         query_result = sorted(text_scores, key=lambda x: x[1], reverse=True)
         result.append(query_result)
@@ -342,7 +343,7 @@ def clip_server(
     from fastapi import FastAPI
     from starlette.middleware.cors import CORSMiddleware
 
-    print("starting boot of clip serve")
+    logger.info("starting boot of clip server")
     index_file = os.path.join(index_dir, index_name)
     assert os.path.exists(index_file), f"index file {index_file} not exist"
     faiss_index = faiss.read_index(index_file)
@@ -441,9 +442,13 @@ class ClipClient:
         self.base_url = base_url
 
     def _post(self, endpoint: str, data: dict) -> dict:
-        response = requests.post(f"{self.base_url}/{endpoint}", json=data)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = requests.post(f"{self.base_url}/{endpoint}", json=data, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except RequestException as e:
+            logger.error(f"Request failed: {e}")
+            return {}
 
     def get_emb(self, text: Optional[str] = None, image: Optional[str] = None) -> List[float]:
         try:

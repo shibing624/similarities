@@ -13,6 +13,7 @@ import fire
 import numpy as np
 import requests
 from loguru import logger
+from requests.exceptions import RequestException
 from text2vec import SentenceModel
 
 from similarities.utils.util import cos_sim
@@ -46,7 +47,6 @@ def bert_embedding(
 
     # Start the multi processes pool on all available CUDA devices
     pool = model.start_multi_process_pool()
-
     # Compute the embeddings using the multi processes pool
     emb = model.encode_multi_process(
         sentences,
@@ -55,7 +55,6 @@ def bert_embedding(
         normalize_embeddings=normalize_embeddings
     )
     logger.info(f"Embeddings computed. Shape: {emb.shape}")
-
     model.stop_multi_process_pool(pool)
     # Save the embeddings
     os.makedirs(embeddings_dir, exist_ok=True)
@@ -81,8 +80,8 @@ def bert_index(
     """indexes text embeddings using autofaiss"""
     from autofaiss import build_index  # pylint: disable=import-outside-toplevel
 
-    logger.debug(f"Starting build index from {embeddings_dir}")
     if embeddings_dir and os.path.exists(embeddings_dir):
+        logger.debug(f"Starting build index from {embeddings_dir}")
         logger.debug(
             f"Embedding path exist, building index "
             f"using embeddings {embeddings_dir} ; saving in {index_dir}"
@@ -144,7 +143,7 @@ def batch_search_index(
             sentence = sentences[ei]
             if debug:
                 logger.debug(f"Found: {sentence}, similarity: {ed}, id: {ei}")
-            text_scores.append((sentence, float(ed), int(ei)))
+            text_scores.append((sentence, str(ed), int(ei)))
         # Sort by score desc
         query_result = sorted(text_scores, key=lambda x: x[1], reverse=True)
         result.append(query_result)
@@ -205,7 +204,7 @@ def bert_server(
     from pydantic import BaseModel, Field
     from starlette.middleware.cors import CORSMiddleware
 
-    logger.info("starting boot of bert serve")
+    logger.info("starting boot of bert server")
     index_file = os.path.join(index_dir, index_name)
     assert os.path.exists(index_file), f"index file {index_file} not exist"
     faiss_index = faiss.read_index(index_file)
@@ -278,9 +277,13 @@ class BertClient:
         self.base_url = base_url
 
     def _post(self, endpoint: str, data: dict) -> dict:
-        response = requests.post(f"{self.base_url}/{endpoint}", json=data)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = requests.post(f"{self.base_url}/{endpoint}", json=data, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except RequestException as e:
+            logger.error(f"Request failed: {e}")
+            return {}
 
     def get_emb(self, input_text: str) -> List[float]:
         try:
