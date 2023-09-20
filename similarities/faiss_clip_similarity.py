@@ -24,12 +24,7 @@ from similarities.utils.util import cos_sim
 
 def load_data(data, header=None, columns=('image_path', 'text'), delimiter='\t'):
     """
-    Encoding data_list text
-    @param data: list of (image_path, text) or DataFrame or file path
-    @param header: read_csv header
-    @param columns: read_csv names
-    @param delimiter: read_csv sep
-    @return: data_df
+    Load data from file or list
     """
     if isinstance(data, list):
         data_df = pd.DataFrame(data, columns=columns)
@@ -81,13 +76,14 @@ def clip_embedding(
     """Embedding text and image with clip model"""
     df = load_data(input_data_or_path, header=header, columns=columns, delimiter=delimiter)
     logger.info(f'Load data success. data num: {len(df)}, top3: {df.head(3)}')
-    images = df['image_path'].tolist()
-    texts = df['text'].tolist()
+
     model = ClipModule(model_name_or_path=model_name, device=device)
     logger.info(f'Load model success. model: {model_name}')
 
     # Start the multi processes pool on all available CUDA devices
     if enable_image:
+        images = df['image_path'].tolist()
+
         os.makedirs(image_embeddings_dir, exist_ok=True)
         images = [preprocess_image(img) for img in images]
         pool = model.start_multi_process_pool()
@@ -104,6 +100,8 @@ def clip_embedding(
         np.save(image_embeddings_file, image_emb)
         logger.debug(f"Embeddings saved to {image_embeddings_file}")
     if enabel_text:
+        texts = df['text'].tolist()
+
         os.makedirs(text_embeddings_dir, exist_ok=True)
         pool = model.start_multi_process_pool()
         # Compute the embeddings using the multi processes pool
