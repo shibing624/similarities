@@ -12,78 +12,37 @@ Similarities is a toolkit for similarity calculation and semantic search, suppor
 
 similarities：相似度计算、语义匹配搜索工具包。
 
-**similarities** 实现了多种相似度计算、语义匹配检索算法，支持海量数据文搜文、文搜图、图搜文多种场景，python3开发，pip安装，开箱即用。
+**similarities** 实现了多种相似度计算、语义匹配检索算法，支持亿级数据文搜文、文搜图、图搜图，python3开发，pip安装，开箱即用。
 
 **Guide**
 
-- [Feature](#Feature)
-- [Evaluation](#Evaluation)
+- [Features](#Features)
 - [Install](#install)
 - [Usage](#usage)
 - [Contact](#Contact)
-- [Reference](#reference)
+- [Acknowledgements](#Acknowledgements)
 
-# Feature
+## Features
 
-### 文本相似度计算（文本匹配）
-- 余弦相似（Cosine Similarity）：两向量求余弦
-- 点积（Dot Product）：两向量归一化后求内积
-- 汉明距离（Hamming Distance），编辑距离（Levenshtein Distance），欧氏距离（Euclidean Distance），曼哈顿距离（Manhattan Distance）等
+### 文本相似度计算 + 文本搜索
 
-#### 语义匹配模型
-- CoSENT文本匹配模型(基于text2vec实现)【推荐】
-- BERT模型（文本向量表征）
-- SentenceBERT文本匹配模型
+- 语义匹配模型【推荐】：本项目基于text2vec实现了CoSENT模型的文本相似度计算和文本搜索，支持中英文、多语言多种SentenceBERT类预训练模型，支持 Cos Similarity/Dot Product/Hamming Distance/Euclidean Distance 等多种相似度计算方法，支持 SemanticSearch/Faiss/Annoy/Hnsw 等多种文本搜索算法，支持亿级数据高效检索
+- 字面匹配模型：本项目实现了Word2Vec、BM25、RankBM25、TFIDF、SimHash、同义词词林、知网Hownet义原匹配等多种字面匹配模型
 
 
-#### 字面匹配模型
-- Word2Vec文本浅层语义表征(基于text2vec实现)【推荐】
-- 同义词词林
-- 知网Hownet义原匹配
-- BM25、RankBM25
-- TFIDF
-- SimHash
+### 图像相似度计算/图文相似度计算 + 图搜图/文搜图
+- 英文CLIP(Contrastive Language-Image Pre-Training)模型：OpenAI提出的图文匹配模型，可用于图文特征（embeddings）、相似度计算、图文检索、零样本图片分类，本项目实现了[openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32)等CLIP系列模型的图文检索功能
+- 中文CLIP模型【推荐】：阿里使用~2亿图文对训练，发布的中文CLIP模型，支持[OFA-Sys/chinese-clip-vit-base-patch16](https://huggingface.co/OFA-Sys/chinese-clip-vit-base-patch16)等Chinese-CLIP系列模型，本项目基于PyTorch实现了中文CLIP模型的向量表征、构建索引（基于autofaiss）、批量检索、后台服务（基于Fastapi）、前端展现（基于gradio）功能
+- 图像特征提取：本项目基于cv2实现了pHash、dHash、wHash、aHash、SIFT等多种图像特征提取算法
 
-### 图像相似度计算（图像匹配）
-#### 图像语义匹配模型、图文相似度计算
-- 英文CLIP(Contrastive Language-Image Pre-Training)模型：OpenAI提出的图文匹配模型，可用于图文特征（embeddings）、相似度计算、图文检索、零样本图片分类，支持[openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32)等CLIP系列模型，原生支持英文
-- 中文CLIP模型：阿里基于~2亿图文对训练，发布的中文CLIP模型，支持[OFA-Sys/chinese-clip-vit-base-patch16](https://huggingface.co/OFA-Sys/chinese-clip-vit-base-patch16)等Chinese-CLIP系列模型，中文效果较好
+## Demo
 
-#### 图像特征提取
-- pHash【推荐】
-- dHash, wHash, aHash
-- SIFT, Scale Invariant Feature Transform(SIFT)
-- SURF, Speeded Up Robust Features(SURF)(doing)
-
-
-### 图像检索
-- SemanticSearch：向量相似检索，基于torch的gpu矩阵高效计算，用Cosine Similarty + topk高效计算，比一对一暴力计算快一个数量级，支持百万数据高效检索
-- Faiss：ANN/KNN向量相似检索，支持亿级数据高效检索
-- hnswlib
-- annoy
-
-# Demo
-
-Compute similarity score Demo: https://huggingface.co/spaces/shibing624/text2vec
-
-Semantic Search Demo: https://huggingface.co/spaces/shibing624/similarities
+Text Search Demo: https://huggingface.co/spaces/shibing624/similarities
 
 ![](docs/hf_search.png)
 
 
-# Evaluation
-### 文本匹配和文本检索
-#### 中文文本匹配模型评测结果
-
-| Model | ATEC | BQ | LCQMC | PAWSX | STS-B | Avg | QPS |
-| :---- | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| Word2Vec | 20.00 | 31.49 | 59.46 | 2.57 | 55.78 | 33.86 | 10283 |
-| SBERT-multi | 18.42 | 38.52 | 63.96 | 10.14 | 78.90 | 41.99 | 2371 |
-| Text2vec | 31.93 | 42.67 | 70.16 | 17.21 | 79.30 | **48.25** | 2572 |
-
-> 结果值使用spearman系数
-
-# Install
+## Install
 
 ```
 pip3 install torch # conda install pytorch
@@ -98,283 +57,58 @@ cd similarities
 python3 setup.py install
 ```
 
-# Usage
+## Usage
 
-### 1. 文本语义相似度计算
+### 1. 文本相似度计算
 
 example: [examples/text_similarity_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_similarity_demo.py)
 
 
 ```python
-from similarities import Similarity
+from similarities import BertSimilarity
 
-m = Similarity()
+m = BertSimilarity(model_name_or_path="shibing624/text2vec-base-chinese")
 r = m.similarity('如何更换花呗绑定银行卡', '花呗更改绑定银行卡')
 print(f"similarity score: {float(r)}")  # similarity score: 0.855146050453186
 ```
 
-Similarity的默认方法：
-```python
-Similarity(corpus: Union[List[str], Dict[str, str]] = None, 
-           model_name_or_path="shibing624/text2vec-base-chinese",
-           max_seq_length=128)
-```
+### 2. 文本搜索
 
-- 返回值：余弦值`score`范围是[-1, 1]，值越大越相似
-- `corpus`：搜索用的doc集，仅搜索时需要，输入格式：句子列表`List[str]`或者{corpus_id: sentence}的`Dict[str, str]`格式
-- `model_name_or_path`：模型名称或者模型路径，默认会从HF model hub下载并使用中文语义匹配模型[shibing624/text2vec-base-chinese](https://huggingface.co/shibing624/text2vec-base-chinese)，如果是多语言景，可以替换为多语言匹配模型[shibing624/text2vec-base-multilingual](https://huggingface.co/shibing624/text2vec-base-multilingual)
-- `max_seq_length`：输入句子的最大长度，最大为匹配模型支持的最大长度，BERT系列是512
-
-### 2. 文本语义匹配搜索
-
-一般在文档候选集中找与query最相似的文本，常用于QA场景的问句相似匹配、文本相似检索等任务。
+一般在文档候选集中找与query最相似的文本，常用于QA场景的问句相似匹配、文本搜索(百万内数据集)等任务。
 
 example: [examples/text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_semantic_search_demo.py)
 
-```python
-import sys
 
-sys.path.append('..')
-from similarities import Similarity
+#### 多语言文本相似度计算和文本搜索
 
-# 1.Compute cosine similarity between two sentences.
-sentences = ['如何更换花呗绑定银行卡',
-             '花呗更改绑定银行卡']
-corpus = [
-    '花呗更改绑定银行卡',
-    '我什么时候开通了花呗',
-    '俄罗斯警告乌克兰反对欧盟协议',
-    '暴风雨掩埋了东北部；新泽西16英寸的降雪',
-    '中央情报局局长访问以色列叙利亚会谈',
-    '人在巴基斯坦基地的炸弹袭击中丧生',
-]
-model = Similarity(model_name_or_path="shibing624/text2vec-base-chinese")
-print(model)
-similarity_score = model.similarity(sentences[0], sentences[1])
-print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
-
-print('-' * 50 + '\n')
-# 2.Compute similarity between two list
-similarity_scores = model.similarity(sentences, corpus)
-print(similarity_scores.numpy())
-for i in range(len(sentences)):
-    for j in range(len(corpus)):
-        print(f"{sentences[i]} vs {corpus[j]}, score: {similarity_scores.numpy()[i][j]:.4f}")
-
-print('-' * 50 + '\n')
-# 3.Semantic Search
-model.add_corpus(corpus)
-res = model.most_similar(queries=sentences, topn=3)
-print(res)
-for q_id, c in res.items():
-    print('query:', sentences[q_id])
-    print("search top 3:")
-    for corpus_id, s in c.items():
-        print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
-```
-
-output:
-
-```shell
-如何更换花呗绑定银行卡 vs 花呗更改绑定银行卡, score: 0.8551
-...
-
-如何更换花呗绑定银行卡 vs 花呗更改绑定银行卡, score: 0.8551
-如何更换花呗绑定银行卡 vs 我什么时候开通了花呗, score: 0.7212
-如何更换花呗绑定银行卡 vs 俄罗斯警告乌克兰反对欧盟协议, score: 0.1450
-如何更换花呗绑定银行卡 vs 暴风雨掩埋了东北部；新泽西16英寸的降雪, score: 0.2167
-如何更换花呗绑定银行卡 vs 中央情报局局长访问以色列叙利亚会谈, score: 0.2517
-如何更换花呗绑定银行卡 vs 人在巴基斯坦基地的炸弹袭击中丧生, score: 0.0809
-花呗更改绑定银行卡 vs 花呗更改绑定银行卡, score: 1.0000
-花呗更改绑定银行卡 vs 我什么时候开通了花呗, score: 0.6807
-花呗更改绑定银行卡 vs 俄罗斯警告乌克兰反对欧盟协议, score: 0.1714
-花呗更改绑定银行卡 vs 暴风雨掩埋了东北部；新泽西16英寸的降雪, score: 0.2162
-花呗更改绑定银行卡 vs 中央情报局局长访问以色列叙利亚会谈, score: 0.2728
-花呗更改绑定银行卡 vs 人在巴基斯坦基地的炸弹袭击中丧生, score: 0.1279
-
-query: 如何更换花呗绑定银行卡
-search top 3:
-	花呗更改绑定银行卡: 0.8551
-	我什么时候开通了花呗: 0.7212
-	中央情报局局长访问以色列叙利亚会谈: 0.2517
-```
-
-> 余弦`score`的值范围[-1, 1]，值越大，表示该query与corpus的文本越相似。
-
-
-#### 多语言文本语义相似度计算和匹配搜索
-
-多语言：包括中、英、韩、日、德、意等多国语言
+使用[shibing624/text2vec-base-multilingual](https://huggingface.co/shibing624/text2vec-base-multilingual)模型，支持中、英、韩、日、德、意等多国语言
 
 example: [examples/text_semantic_search_multilingual_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_semantic_search_multilingual_demo.py)
 
-### 3. 快速近似文本语义匹配搜索
+### 3. 近似文本搜索
 
 支持Annoy、Hnswlib的近似语义匹配搜索，常用于百万数据集的匹配搜索任务。
 
 example: [examples/fast_text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/fast_text_semantic_search_demo.py)
 
-### 4. 基于字面的文本相似度计算和匹配搜索
+### 4. 基于字面的文本相似度计算和文本搜索
 
 支持同义词词林（Cilin）、知网Hownet、词向量（WordEmbedding）、Tfidf、SimHash、BM25等算法的相似度计算和字面匹配搜索，常用于文本匹配冷启动。
 
 example: [examples/literal_text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/literal_text_semantic_search_demo.py)
 
-```python
-from similarities import SimHashSimilarity, TfidfSimilarity, BM25Similarity, \
-    WordEmbeddingSimilarity, CilinSimilarity, HownetSimilarity
+### 5. 图像相似度计算和图片搜索
 
-text1 = "如何更换花呗绑定银行卡"
-text2 = "花呗更改绑定银行卡"
-
-corpus = [
-    '花呗更改绑定银行卡',
-    '我什么时候开通了花呗',
-    '俄罗斯警告乌克兰反对欧盟协议',
-    '暴风雨掩埋了东北部；新泽西16英寸的降雪',
-    '中央情报局局长访问以色列叙利亚会谈',
-    '人在巴基斯坦基地的炸弹袭击中丧生',
-]
-
-queries = [
-    '我的花呗开通了？',
-    '乌克兰被俄罗斯警告'
-]
-m = TfidfSimilarity()
-print(text1, text2, ' sim score: ', m.similarity(text1, text2))
-
-m.add_corpus(corpus)
-res = m.most_similar(queries, topn=3)
-print('sim search: ', res)
-for q_id, c in res.items():
-    print('query:', queries[q_id])
-    print("search top 3:")
-    for corpus_id, s in c.items():
-        print(f'\t{m.corpus[corpus_id]}: {s:.4f}')
-```
-
-output:
-
-```shell
-如何更换花呗绑定银行卡 花呗更改绑定银行卡  sim score:  0.8203384355246909
-
-sim search:  {0: {2: 0.9999999403953552, 1: 0.43930041790008545, 0: 0.0}, 1: {0: 0.7380483150482178, 1: 0.0, 2: 0.0}}
-query: 我的花呗开通了？
-search top 3:
-	我什么时候开通了花呗: 1.0000
-	花呗更改绑定银行卡: 0.4393
-	俄罗斯警告乌克兰反对欧盟协议: 0.0000
-...
-```
-
-### 5. 图像相似度计算和匹配搜索
-
-支持[CLIP](similarities/image_similarity.py)、pHash、SIFT等算法的图像相似度计算和匹配搜索。
+支持CLIP、pHash、SIFT等算法的图像相似度计算和匹配搜索，中文 CLIP 模型支持图搜图，文搜图、还支持中英文图文互搜。
 
 example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/image_semantic_search_demo.py)
-
-```python
-import sys
-import glob
-from PIL import Image
-
-sys.path.append('..')
-from similarities import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
-
-
-def sim_and_search(m):
-    print(m)
-    # similarity
-    sim_scores = m.similarity(imgs1, imgs2)
-    print('sim scores: ', sim_scores)
-    for (idx, i), j in zip(enumerate(image_fps1), image_fps2):
-        s = sim_scores[idx] if isinstance(sim_scores, list) else sim_scores[idx][idx]
-        print(f"{i} vs {j}, score: {s:.4f}")
-    # search
-    m.add_corpus(corpus_imgs)
-    queries = imgs1
-    res = m.most_similar(queries, topn=3)
-    print('sim search: ', res)
-    for q_id, c in res.items():
-        print('query:', image_fps1[q_id])
-        print("search top 3:")
-        for corpus_id, s in c.items():
-            print(f'\t{m.corpus[corpus_id].filename}: {s:.4f}')
-    print('-' * 50 + '\n')
-
-image_fps1 = ['data/image1.png', 'data/image3.png']
-image_fps2 = ['data/image12-like-image1.png', 'data/image10.png']
-imgs1 = [Image.open(i) for i in image_fps1]
-imgs2 = [Image.open(i) for i in image_fps2]
-corpus_fps = glob.glob('data/*.jpg') + glob.glob('data/*.png')
-corpus_imgs = [Image.open(i) for i in corpus_fps]
-
-# 2. image and image similarity score
-sim_and_search(ClipSimilarity())  # the best result
-sim_and_search(ImageHashSimilarity(hash_function='phash'))
-sim_and_search(SiftSimilarity())
-```
-
-output:
-
-```shell
-Similarity: ClipSimilarity, matching_model: ClipModule
-sim scores:  tensor([[0.9580, 0.8654],
-        [0.6558, 0.6145]])
-
-data/image1.png vs data/image12-like-image1.png, score: 0.9580
-data/image3.png vs data/image10.png, score: 0.6145
-
-sim search:  {0: {6: 0.9999999403953552, 0: 0.9579654932022095, 4: 0.9326782822608948}, 1: {8: 0.9999997615814209, 4: 0.6729235649108887, 0: 0.6558331847190857}}
-
-query: data/image1.png
-search top 3:
-	data/image1.png: 1.0000
-	data/image12-like-image1.png: 0.9580
-	data/image8-like-image1.png: 0.9327
-```
 
 ![image_sim](docs/image_sim.png)
 
-### 6. 图文互搜
-
-CLIP 模型不仅支持以图搜图，还支持中英文图文互搜。
-
-example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/image_semantic_search_demo.py)
 
 
-```python
-import sys
-import glob
-from PIL import Image
-sys.path.append('..')
-from similarities import ImageHashSimilarity, SiftSimilarity, ClipSimilarity
 
-m = ClipSimilarity()
-print(m)
-# similarity score between text and image
-image_fps = ['data/image3.png',  # yellow flower image
-             'data/image1.png']  # tiger image
-texts = ['a yellow flower', '老虎']
-imgs = [Image.open(i) for i in image_fps]
-sim_scores = m.similarity(imgs, texts)
-
-print('sim scores: ', sim_scores)
-for (idx, i), j in zip(enumerate(image_fps), texts):
-    s = sim_scores[idx][idx]
-    print(f"{i} vs {j}, score: {s:.4f}")
-```
-
-output:
-
-```shell
-sim scores:  tensor([[0.3220, 0.2409],
-        [0.1677, 0.2959]])
-data/image3.png vs a yellow flower, score: 0.3220
-data/image1.png vs 老虎, score: 0.2112
-```
-
-# Contact
+## Contact
 
 - Issue(建议)
   ：[![GitHub issues](https://img.shields.io/github/issues/shibing624/similarities.svg)](https://github.com/shibing624/similarities/issues)
@@ -383,7 +117,7 @@ data/image1.png vs 老虎, score: 0.2112
 
 <img src="docs/wechat.jpeg" width="200" />
 
-# Citation
+## Citation
 
 如果你在研究中使用了similarities，请按如下格式引用：
 
@@ -404,11 +138,11 @@ BibTeX:
 }
 ```
 
-# License
+## License
 
 授权协议为 [The Apache License 2.0](/LICENSE)，可免费用做商业用途。请在产品说明中附加similarities的链接和授权协议。
 
-# Contribute
+## Contribute
 
 项目代码还很粗糙，如果大家对代码有所改进，欢迎提交回本项目，在提交之前，注意以下两点：
 
@@ -417,11 +151,15 @@ BibTeX:
 
 之后即可提交PR。
 
-# Reference
+## Acknowledgements 
 
 - [A Simple but Tough-to-Beat Baseline for Sentence Embeddings[Sanjeev Arora and Yingyu Liang and Tengyu Ma, 2017]](https://openreview.net/forum?id=SyK00v5xx)
-- [liuhuanyong/SentenceSimilarity](https://github.com/liuhuanyong/SentenceSimilarity)
-- [shibing624/text2vec](https://github.com/shibing624/text2vec)
-- [qwertyforce/image_search](https://github.com/qwertyforce/image_search)
+- [https://github.com/liuhuanyong/SentenceSimilarity](https://github.com/liuhuanyong/SentenceSimilarity)
+- [https://github.com/qwertyforce/image_search](https://github.com/qwertyforce/image_search)
 - [ImageHash - Official Github repository](https://github.com/JohannesBuchner/imagehash)
-- [openai/CLIP](https://github.com/openai/CLIP)
+- [https://github.com/openai/CLIP](https://github.com/openai/CLIP)
+- [https://github.com/OFA-Sys/Chinese-CLIP](https://github.com/OFA-Sys/Chinese-CLIP)
+- [https://github.com/UKPLab/sentence-transformers](https://github.com/UKPLab/sentence-transformers)
+- [https://github.com/rom1504/clip-retrieval](https://github.com/rom1504/clip-retrieval)
+
+Thanks for their great work!

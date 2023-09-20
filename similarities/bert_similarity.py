@@ -158,6 +158,7 @@ class BertSimilarity(SimilarityABC):
                      score_function: str = "cos_sim"):
         """
         Find the topn most similar texts to the queries against the corpus.
+            It can be used for Information Retrieval / Semantic Search for corpora up to about 1 Million entries.
         :param queries: str or list of str
         :param topn: int
         :param score_function: function to compute similarity, default cos_sim
