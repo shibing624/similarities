@@ -38,7 +38,7 @@ setup(
     ],
     keywords='similarities,Chinese Text Similarity Calculation Tool,similarity,word2vec',
     install_requires=[
-        "text2vec>=1.2.8",
+        "text2vec>=1.2.9",
         "jieba>=0.39",
         "loguru",
         "Pillow",
