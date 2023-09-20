@@ -11,7 +11,7 @@ from PIL import Image
 
 sys.path.append('..')
 
-from similarities.imagesim import ClipSimilarity, ImageHashSimilarity, SiftSimilarity
+from similarities.image_similarity import ClipSimilarity, ImageHashSimilarity, SiftSimilarity
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 

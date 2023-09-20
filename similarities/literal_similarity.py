@@ -16,7 +16,7 @@ import jieba.analyse
 import jieba.posseg
 import numpy as np
 from loguru import logger
-from text2vec import Word2Vec
+
 from tqdm import tqdm
 
 from similarities.similarity import SimilarityABC
@@ -375,9 +375,13 @@ class WordEmbeddingSimilarity(SimilarityABC):
     def __init__(self, corpus: Union[List[str], Dict[str, str]] = None, model_name_or_path="w2v-light-tencent-chinese"):
         """
         Init WordEmbeddingSimilarity.
-        :param model_name_or_path: ~text2vec.Word2Vec model name or path to model file.
+        :param model_name_or_path: Word2Vec model name or path to model file.
         :param corpus: list of str
         """
+        try:
+            from text2vec import Word2Vec
+        except ImportError:
+            raise ImportError("Please install text2vec first, `pip install text2vec`")
         if isinstance(model_name_or_path, str):
             self.keyedvectors = Word2Vec(model_name_or_path)
         elif hasattr(model_name_or_path, "encode"):

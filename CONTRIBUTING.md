@@ -1,6 +1,6 @@
 # Contributing
 
-We are happy to accept your contributions to make `text2vec` better and more awesome! To avoid unnecessary work on either
+We are happy to accept your contributions to make this repo better and more awesome! To avoid unnecessary work on either
 side, please stick to the following process:
 
 1. Check if there is already [an issue](https://github.com/shibing624/similarities/issues) for your concern.

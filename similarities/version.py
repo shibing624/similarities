@@ -1,7 +1,1 @@
-# -*- coding: utf-8 -*-
-"""
-@author:XuMing(xuming624@qq.com)
-@description:
-"""
-
-__version__ = '1.0.6'
+__version__ = '1.1.0'

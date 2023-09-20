@@ -5,9 +5,9 @@
 """
 import gradio as gr
 
-from similarities import Similarity
+from similarities import BertSimilarity
 
-sim_model = Similarity()
+sim_model = BertSimilarity()
 
 
 def load_file(path):

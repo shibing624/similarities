@@ -9,7 +9,7 @@ import unittest
 
 sys.path.append('..')
 
-from similarities.literalsim import (
+from similarities.literal_similarity import (
     SimHashSimilarity,
     TfidfSimilarity,
     BM25Similarity,

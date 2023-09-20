@@ -25,6 +25,7 @@ setup(
     license="Apache License 2.0",
     zip_safe=False,
     python_requires=">=3.6.0",
+    entry_points={"console_scripts": ["similarities = similarities.cli:main"]},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
@@ -37,14 +38,13 @@ setup(
     ],
     keywords='similarities,Chinese Text Similarity Calculation Tool,similarity,word2vec',
     install_requires=[
-        "text2vec>=1.1.5",
-        "transformers",
+        "text2vec>=1.2.9",
         "jieba>=0.39",
         "loguru",
         "Pillow",
-        # "hnswlib",
-        # "opencv-python",
-        # "annoy",
+        "fire",
+        "autofaiss",
+        "transformers",
     ],
     packages=find_packages(),
 )

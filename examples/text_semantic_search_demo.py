@@ -6,7 +6,7 @@
 import sys
 
 sys.path.append('..')
-from similarities import Similarity
+from similarities import BertSimilarity
 
 # 1.Compute cosine similarity between two sentences.
 sentences = ['如何更换花呗绑定银行卡',
@@ -19,7 +19,7 @@ corpus = [
     '中央情报局局长访问以色列叙利亚会谈',
     '人在巴基斯坦基地的炸弹袭击中丧生',
 ]
-model = Similarity(model_name_or_path="shibing624/text2vec-base-chinese")
+model = BertSimilarity(model_name_or_path="shibing624/text2vec-base-chinese")
 print(model)
 similarity_score = model.similarity(sentences[0], sentences[1])
 print(f"{sentences[0]} vs {sentences[1]}, score: {float(similarity_score):.4f}")
@@ -42,3 +42,6 @@ for q_id, id_score_dict in res.items():
     print("search top 3:")
     for corpus_id, s in id_score_dict.items():
         print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
+
+print('-' * 50 + '\n')
+print(model.search(sentences[0], topn=3))

@@ -7,7 +7,7 @@ compute cosine similarity for a given list of sentences.
 import sys
 
 sys.path.append('..')
-from similarities import Similarity
+from similarities import BertSimilarity
 
 # Two lists of sentences
 sentences1 = [
@@ -26,7 +26,7 @@ sentences2 = [
     '敏捷的棕色狐狸跳过了懒狗',
 ]
 
-model = Similarity(model_name_or_path="shibing624/text2vec-base-multilingual")
+model = BertSimilarity(model_name_or_path="shibing624/text2vec-base-multilingual")
 # 使用的是多语言文本匹配模型
 scores = model.similarity(sentences1, sentences2)
 print('1:use Similarity compute cos scores\n')
@@ -53,12 +53,12 @@ corpus = [
 ]
 
 model.add_corpus(corpus)
-model.save_index('en_corpus_emb.json')
+model.save_embeddings('en_corpus_emb.json')
 res = model.most_similar(queries=sentences1, topn=3)
 print(res)
 del model
-model = Similarity(model_name_or_path="shibing624/text2vec-base-multilingual")
-model.load_index('en_corpus_emb.json')
+model = BertSimilarity(model_name_or_path="shibing624/text2vec-base-multilingual")
+model.load_embeddings('en_corpus_emb.json')
 res = model.most_similar(queries=sentences1, topn=3)
 print(res)
 for q_id, c in res.items():
