@@ -63,8 +63,8 @@ Text Search Demo: https://huggingface.co/spaces/shibing624/similarities
 ## Install
 
 ```
-pip3 install torch # conda install pytorch
-pip3 install -U similarities
+pip install torch # conda install pytorch
+pip install -U similarities
 ```
 
 or
@@ -72,7 +72,7 @@ or
 ```
 git clone https://github.com/shibing624/similarities.git
 cd similarities
-python3 setup.py install
+pip install -e .
 ```
 
 ## Usage
