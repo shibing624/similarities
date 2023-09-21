@@ -26,7 +26,7 @@ def bert_embedding(
         corpus_file: str = 'tmp_data_dir/corpus.npy',
         model_name: str = "shibing624/text2vec-base-chinese",
         batch_size: int = 32,
-        device: Optional[str] = None,
+        target_devices: List[str] = None,
         normalize_embeddings: bool = False,
 ):
     sentences = set()
@@ -42,11 +42,11 @@ def bert_embedding(
     logger.info(f'Load sentences success. sentences num: {len(sentences)}, top3: {sentences[:3]}')
     assert len(sentences) > 0, f"sentences is empty, please check input files: {input_files}"
 
-    model = SentenceModel(model_name_or_path=model_name, device=device)
+    model = SentenceModel(model_name_or_path=model_name)
     logger.info(f'Load model success. model: {model}')
 
     # Start the multi processes pool on all available CUDA devices
-    pool = model.start_multi_process_pool()
+    pool = model.start_multi_process_pool(target_devices=target_devices)
     # Compute the embeddings using the multi processes pool
     emb = model.encode_multi_process(
         sentences,

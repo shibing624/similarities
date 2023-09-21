@@ -71,14 +71,14 @@ def clip_embedding(
         batch_size: int = 32,
         enable_image: bool = True,
         enabel_text: bool = False,
-        device: Optional[str] = None,
+        target_devices: List[str] = None,
         normalize_embeddings: bool = False,
 ):
     """Embedding text and image with clip model"""
     df = load_data(input_data_or_path, header=header, columns=columns, delimiter=delimiter)
     logger.info(f'Load data success. data num: {len(df)}, top3: {df.head(3)}')
 
-    model = ClipModule(model_name_or_path=model_name, device=device)
+    model = ClipModule(model_name_or_path=model_name)
     logger.info(f'Load model success. model: {model_name}')
 
     # Start the multi processes pool on all available CUDA devices
@@ -87,7 +87,7 @@ def clip_embedding(
 
         os.makedirs(image_embeddings_dir, exist_ok=True)
         images = [preprocess_image(img) for img in images]
-        pool = model.start_multi_process_pool()
+        pool = model.start_multi_process_pool(target_devices=target_devices)
         # Compute the embeddings using the multi processes pool
         image_emb = model.encode_multi_process(
             images,
@@ -104,7 +104,7 @@ def clip_embedding(
         texts = df['text'].tolist()
 
         os.makedirs(text_embeddings_dir, exist_ok=True)
-        pool = model.start_multi_process_pool()
+        pool = model.start_multi_process_pool(target_devices=target_devices)
         # Compute the embeddings using the multi processes pool
         text_emb = model.encode_multi_process(
             texts,
