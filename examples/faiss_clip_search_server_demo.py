@@ -27,7 +27,7 @@ def main():
         batch_size=12,
         enable_image=True,
         enabel_text=False,
-        device=None,
+        target_devices=None,
         normalize_embeddings=True,
     )
 

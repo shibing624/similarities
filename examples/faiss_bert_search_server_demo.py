@@ -19,7 +19,7 @@ def main():
         corpus_file='tmp_data_dir/corpus.npy',
         model_name="shibing624/text2vec-base-chinese",
         batch_size=12,
-        device=None,
+        target_devices=None,
         normalize_embeddings=True,
     )
 
