@@ -143,7 +143,7 @@ def batch_search_index(
             sentence = sentences[ei]
             if debug:
                 logger.debug(f"Found: {sentence}, similarity: {ed}, id: {ei}")
-            text_scores.append((sentence, str(ed), int(ei)))
+            text_scores.append((sentence, float(ed), int(ei)))
         # Sort by score desc
         query_result = sorted(text_scores, key=lambda x: x[1], reverse=True)
         result.append(query_result)

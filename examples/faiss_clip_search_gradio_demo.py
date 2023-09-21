@@ -5,6 +5,7 @@
 """
 
 import base64
+import json
 import pprint
 import sys
 
@@ -34,9 +35,15 @@ def search_image(text="", image=None):
     html_output = ""
     for result in results:
         item, similarity_score, _ = result
-        image_path = item.get("image_path", "")
-        tip = pprint.pformat(item)
-        image_src = "data:image/jpeg;base64," + image_path_to_base64(image_path)
+        item_dict = json.loads(item)
+        image_path = item_dict.get("image_path", "")
+        tip = pprint.pformat(item_dict)
+        if not image_path:
+            continue
+        if image_path.startswith("http"):
+            image_src = image_path
+        else:
+            image_src = "data:image/jpeg;base64," + image_path_to_base64(image_path)
         html_output += f'<div style="display: inline-block; position: relative; margin: 10px;">'
         html_output += f'<img src="{image_src}" width="200" height="200" title="{tip}">'
         html_output += f'<div style="position: absolute; bottom: 0; right: 0; background-color: rgba(255, 255, 255, 0.7); padding: 2px 5px;">'

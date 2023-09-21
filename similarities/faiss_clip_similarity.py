@@ -227,10 +227,11 @@ def batch_search_index(
         # Sorted faiss search result with distance
         text_scores = []
         for ed, ei in zip(d, i):
-            item = df.iloc[ei].to_dict()
+            # Convert to json, avoid float values error
+            item = df.iloc[ei].to_json(force_ascii=False)
             if debug:
                 logger.debug(f"Found: {item}, similarity: {ed}, id: {ei}")
-            text_scores.append((item, str(ed), int(ei)))
+            text_scores.append((item, float(ed), int(ei)))
         # Sort by score desc
         query_result = sorted(text_scores, key=lambda x: x[1], reverse=True)
         result.append(query_result)
@@ -283,7 +284,7 @@ def clip_filter(
                 for q, sorted_text_scores in zip(texts, result):
                     json.dump(
                         {'text': q,
-                         'results': [{'sentence': i, 'similarity': j, 'id': k} for i, j, k in sorted_text_scores]},
+                         'results': [{'item': i, 'similarity': j, 'id': k} for i, j, k in sorted_text_scores]},
                         f,
                         ensure_ascii=False,
                     )
@@ -293,7 +294,7 @@ def clip_filter(
                 for q, sorted_text_scores in zip(images, result):
                     json.dump(
                         {'image': q,
-                         'results': [{'sentence': i, 'similarity': j, 'id': k} for i, j, k in sorted_text_scores]},
+                         'results': [{'item': i, 'similarity': j, 'id': k} for i, j, k in sorted_text_scores]},
                         f,
                         ensure_ascii=False,
                     )
@@ -303,7 +304,7 @@ def clip_filter(
                 for q, sorted_text_scores in zip(queries, result):
                     json.dump(
                         {'emb': q.tolist(),
-                         'results': [{'sentence': i, 'similarity': j, 'id': k} for i, j, k in sorted_text_scores]},
+                         'results': [{'item': i, 'similarity': j, 'id': k} for i, j, k in sorted_text_scores]},
                         f,
                         ensure_ascii=False,
                     )
