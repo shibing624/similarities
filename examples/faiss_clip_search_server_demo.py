@@ -26,7 +26,7 @@ def main():
         model_name="OFA-Sys/chinese-clip-vit-base-patch16",
         batch_size=64,
         enable_image=True,
-        enabel_text=False,
+        enable_text=False,
         target_devices=['cuda:0', 'cuda:1'],
         normalize_embeddings=True,
     )

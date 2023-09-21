@@ -221,7 +221,8 @@ class ClipModule(nn.Module):
         This method is recommended if you want to encode on multiple GPUs. It is advised
         to start only one process per GPU. This method works together with encode_multi_process
 
-        :param target_devices: PyTorch target devices, e.g. cuda:0, cuda:1... If None, all available CUDA devices will be used
+        :param target_devices: PyTorch target devices,
+            list, e.g. ['cuda:0', 'cuda:1'] If None, all available CUDA devices will be used
         :return: Returns a dict with the target processes, an input queue and output queue.
         """
         if target_devices is None:

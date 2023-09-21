@@ -70,7 +70,7 @@ def clip_embedding(
         model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16",
         batch_size: int = 32,
         enable_image: bool = True,
-        enabel_text: bool = False,
+        enable_text: bool = False,
         target_devices: List[str] = None,
         normalize_embeddings: bool = False,
 ):
@@ -100,7 +100,7 @@ def clip_embedding(
         image_embeddings_file = os.path.join(image_embeddings_dir, embeddings_name)
         np.save(image_embeddings_file, image_emb)
         logger.debug(f"Embeddings saved to {image_embeddings_file}")
-    if enabel_text:
+    if enable_text:
         texts = df['text'].tolist()
 
         os.makedirs(text_embeddings_dir, exist_ok=True)
