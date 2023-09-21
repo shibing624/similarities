@@ -55,6 +55,8 @@ class ClipModule(nn.Module):
         else:
             self.model = CLIPModel.from_pretrained(model_name_or_path)
             self.processor = CLIPProcessor.from_pretrained(processor_name)
+        logger.debug(f"Device: {self.device}")
+        self.model.to(self.device)
 
     def __str__(self):
         return f"model_name_or_path: {self.model_name_or_path} ClipModule({self.model})"
@@ -177,7 +179,7 @@ class ClipModule(nn.Module):
             If convert_to_numpy, a numpy matrix is returned.
         """
         if device is None:
-            device = device
+            device = self.device
         self.model.eval()
         input_was_string = False
         if isinstance(sentences, str) or not hasattr(sentences, '__len__'):
