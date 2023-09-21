@@ -24,10 +24,10 @@ def main():
         embeddings_name='emb.npy',
         corpus_file='tmp_data_dir/corpus.csv',
         model_name="OFA-Sys/chinese-clip-vit-base-patch16",
-        batch_size=12,
+        batch_size=64,
         enable_image=True,
         enabel_text=False,
-        target_devices=None,
+        target_devices=['cuda:0', 'cuda:1'],
         normalize_embeddings=True,
     )
 
