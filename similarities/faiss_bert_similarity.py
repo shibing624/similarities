@@ -337,12 +337,13 @@ def bert_server(
 
 
 class BertClient:
-    def __init__(self, base_url: str = "http://0.0.0.0:8001"):
+    def __init__(self, base_url: str = "http://0.0.0.0:8001", timeout: int = 30):
         self.base_url = base_url
+        self.timeout = timeout
 
     def _post(self, endpoint: str, data: dict) -> dict:
         try:
-            response = requests.post(f"{self.base_url}/{endpoint}", json=data, timeout=10)
+            response = requests.post(f"{self.base_url}/{endpoint}", json=data, timeout=self.timeout)
             response.raise_for_status()
             return response.json()
         except RequestException as e:
