@@ -13,20 +13,21 @@ from similarities import bert_embedding, bert_index, bert_filter, bert_server
 def main():
     # Build embedding
     bert_embedding(
-        input_dir='data/toy_corpus/',
-        embeddings_dir='tmp_embeddings_dir/',
-        embeddings_name='emb.npy',
-        corpus_file='tmp_data_dir/corpus.npy',
+        input_dir='data/toy_bert/',
+        embeddings_dir='bert_engine/text_emb/',
+        corpus_dir='bert_engine/corpus/',
         model_name="shibing624/text2vec-base-chinese",
         batch_size=12,
         target_devices=None,
         normalize_embeddings=True,
+        text_column_name="sentence",
+        names=['sentence'],
     )
 
     # Build index
     bert_index(
-        embeddings_dir='tmp_embeddings_dir/',
-        index_dir="tmp_index_dir/",
+        embeddings_dir='bert_engine/text_emb/',
+        index_dir="bert_engine/text_index/",
         index_name="faiss.index",
         max_index_memory_usage="1G",
         current_memory_available="2G",
@@ -38,11 +39,11 @@ def main():
     sentences = ['如何更换花呗绑定银行卡', '花呗更改绑定银行卡']
     bert_filter(
         queries=sentences,
-        output_file=f"tmp_outputs/result.json",
+        output_file=f"outputs/result.json",
         model_name="shibing624/text2vec-base-chinese",
-        index_dir='tmp_index_dir/',
+        index_dir='bert_engine/text_index/',
         index_name="faiss.index",
-        corpus_file="tmp_data_dir/corpus.npy",
+        corpus_dir="bert_engine/corpus/",
         num_results=5,
         threshold=None,
         device=None,
@@ -51,9 +52,9 @@ def main():
     # Server
     bert_server(
         model_name="shibing624/text2vec-base-chinese",
-        index_dir='tmp_index_dir/',
+        index_dir='bert_engine/text_index/',
         index_name="faiss.index",
-        corpus_file="tmp_data_dir/corpus.npy",
+        corpus_dir="bert_engine/corpus/",
         num_results=5,
         threshold=None,
         device=None,

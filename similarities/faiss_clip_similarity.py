@@ -7,7 +7,8 @@ import base64
 import json
 import os
 from io import BytesIO
-from typing import Sequence, List, Optional, Union
+from pathlib import Path
+from typing import List, Optional, Union
 
 import faiss
 import fire
@@ -21,21 +22,6 @@ from requests.exceptions import RequestException
 
 from similarities.clip_module import ClipModule
 from similarities.utils.util import cos_sim
-
-
-def load_data(data, header=None, columns=('image_path', 'text'), delimiter='\t'):
-    """
-    Load data from file or list
-    """
-    if isinstance(data, list):
-        data_df = pd.DataFrame(data, columns=columns)
-    elif isinstance(data, str) and os.path.exists(data):
-        data_df = pd.read_csv(data, header=header, delimiter=delimiter, names=columns)
-    elif isinstance(data, pd.DataFrame):
-        data_df = data
-    else:
-        raise TypeError('should be list or file path')
-    return data_df
 
 
 def preprocess_image(image_input: Union[str, np.ndarray, bytes]) -> Image.Image:
@@ -59,84 +45,121 @@ def preprocess_image(image_input: Union[str, np.ndarray, bytes]) -> Image.Image:
 
 
 def clip_embedding(
-        input_data_or_path: str,
-        columns: Optional[Sequence[str]] = ('image_path', 'text'),
-        header: Optional[int] = None,
-        delimiter: str = '\t',
-        image_embeddings_dir: Optional[str] = 'tmp_image_embeddings_dir/',
-        text_embeddings_dir: Optional[str] = 'tmp_text_embeddings_dir/',
-        embeddings_name: str = 'emb.npy',
-        corpus_file: str = 'tmp_data_dir/corpus.csv',
+        input_dir: str,
+        chunk_size: int = 10000,
+        image_embeddings_dir: Optional[str] = 'clip_engine/image_emb/',
+        text_embeddings_dir: Optional[str] = 'clip_engine/text_emb/',
+        corpus_dir: str = 'clip_engine/corpus/',
         model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16",
         batch_size: int = 32,
         enable_image: bool = True,
+        image_column_name: str = 'image_path',
         enable_text: bool = False,
+        text_column_name: str = 'text',
         target_devices: List[str] = None,
         normalize_embeddings: bool = False,
+        **kwargs,
 ):
-    """Embedding text and image with clip model"""
-    df = load_data(input_data_or_path, header=header, columns=columns, delimiter=delimiter)
-    logger.info(f'Load data success. data num: {len(df)}, top3: {df.head(3)}')
-
+    """
+    Embedding text and image with clip model
+    :param input_dir: input dir, support tsv/csv/txt files
+    :param chunk_size: chunk size to read the input file
+    :param image_embeddings_dir: save image embeddings dir
+    :param text_embeddings_dir: save text embeddings dir
+    :param corpus_dir: save corpus dir
+    :param model_name: clip model name
+    :param batch_size: batch size to compute embeddings, default 32
+    :param enable_image: enable image embedding, default True
+    :param image_column_name: image column name from input file, default image_path
+    :param enable_text: enable text embedding, default False
+    :param text_column_name: text column name from input file, default text
+    :param target_devices: pytorch target devices, e.g. ['cuda:0', cuda:1]
+        If None, all available CUDA devices will be used
+    :param normalize_embeddings: whether to normalize embeddings before saving
+    :param kwargs: read_csv kwargs
+    :return: None, save embeddings to image_embeddings_dir and text_embeddings_dir
+    """
+    assert enable_image or enable_text, "enable_image and enable_text should not be both False"
+    input_files = [f for f in os.listdir(input_dir) if f.endswith((".tsv", ".csv", ".txt"))]
+    assert len(input_files) > 0, f"input_dir {input_dir} has no tsv/csv/txt files"
+    logger.info(f"Start embedding, input files: {input_files}")
     model = ClipModule(model_name_or_path=model_name)
     logger.info(f'Load model success. model: {model_name}')
 
-    # Start the multi processes pool on all available CUDA devices
-    if enable_image:
-        images = df['image_path'].tolist()
+    for i, file in enumerate(input_files):
+        logger.debug(f"Processing file {i + 1}/{len(input_files)}: {file}")
+        output_file_counter = 0
+        input_path = os.path.join(input_dir, file)
+        # Read the input file in chunks
+        for chunk_df in pd.read_csv(input_path, chunksize=chunk_size, **kwargs):
+            if enable_image:
+                images = chunk_df[image_column_name].tolist()
 
-        os.makedirs(image_embeddings_dir, exist_ok=True)
-        images = [preprocess_image(img) for img in images]
-        pool = model.start_multi_process_pool(target_devices=target_devices)
-        # Compute the embeddings using the multi processes pool
-        image_emb = model.encode_multi_process(
-            images,
-            pool,
-            batch_size=batch_size,
-            normalize_embeddings=normalize_embeddings
-        )
-        model.stop_multi_process_pool(pool)
-        logger.info(f"Embeddings computed. Shape: {image_emb.shape}")
-        image_embeddings_file = os.path.join(image_embeddings_dir, embeddings_name)
-        np.save(image_embeddings_file, image_emb)
-        logger.debug(f"Embeddings saved to {image_embeddings_file}")
-    if enable_text:
-        texts = df['text'].tolist()
+                images = [preprocess_image(img) for img in images]
+                pool = model.start_multi_process_pool(target_devices=target_devices)
+                # Compute the embeddings using the multi processes pool
+                image_emb = model.encode_multi_process(
+                    images,
+                    pool,
+                    batch_size=batch_size,
+                    normalize_embeddings=normalize_embeddings
+                )
+                model.stop_multi_process_pool(pool)
+                os.makedirs(image_embeddings_dir, exist_ok=True)
+                image_embeddings_file = os.path.join(image_embeddings_dir, f"part-{output_file_counter:05d}.npy")
+                np.save(image_embeddings_file, image_emb)
+                logger.debug(f"Embeddings computed. Shape: {image_emb.shape}, saved to {image_embeddings_file}")
+            if enable_text:
+                texts = chunk_df[text_column_name].tolist()
 
-        os.makedirs(text_embeddings_dir, exist_ok=True)
-        pool = model.start_multi_process_pool(target_devices=target_devices)
-        # Compute the embeddings using the multi processes pool
-        text_emb = model.encode_multi_process(
-            texts,
-            pool,
-            batch_size=batch_size,
-            normalize_embeddings=normalize_embeddings
-        )
-        model.stop_multi_process_pool(pool)
-        logger.info(f"Embeddings computed. Shape: {text_emb.shape}")
-        text_embeddings_file = os.path.join(text_embeddings_dir, embeddings_name)
-        np.save(text_embeddings_file, text_emb)
-        logger.debug(f"Embeddings saved to {text_embeddings_file}")
+                pool = model.start_multi_process_pool(target_devices=target_devices)
+                # Compute the embeddings using the multi processes pool
+                text_emb = model.encode_multi_process(
+                    texts,
+                    pool,
+                    batch_size=batch_size,
+                    normalize_embeddings=normalize_embeddings
+                )
+                model.stop_multi_process_pool(pool)
+                os.makedirs(text_embeddings_dir, exist_ok=True)
+                text_embeddings_file = os.path.join(text_embeddings_dir, f"part-{output_file_counter:05d}.npy")
+                np.save(text_embeddings_file, text_emb)
+                logger.debug(f"Embeddings computed. Shape: {text_emb.shape}, saved to {text_embeddings_file}")
 
-    # Save corpus
-    if corpus_file:
-        os.makedirs(os.path.dirname(corpus_file), exist_ok=True)
-        df.to_csv(corpus_file, index=False)
-        logger.debug(f"data saved to {corpus_file}")
+            # Save corpus to Parquet file
+            os.makedirs(corpus_dir, exist_ok=True)
+            corpus_file = os.path.join(corpus_dir, f"part-{output_file_counter:05d}.parquet")
+            chunk_df.to_parquet(corpus_file, index=False)
+            logger.debug(f"Corpus data saved to {corpus_file}")
+            output_file_counter += 1
+    logger.info(f"Embedding done, saved image emb to {image_embeddings_dir} and text emb to {text_embeddings_dir}")
 
 
 def clip_index(
         image_embeddings_dir: Optional[str] = None,
         text_embeddings_dir: Optional[str] = None,
-        image_index_dir: Optional[str] = "tmp_image_index_dir/",
-        text_index_dir: Optional[str] = "tmp_text_index_dir/",
+        image_index_dir: Optional[str] = "clip_engine/image_index/",
+        text_index_dir: Optional[str] = "clip_engine/text_index/",
         index_name: str = "faiss.index",
         max_index_memory_usage: str = "4G",
         current_memory_available: str = "16G",
         use_gpu: bool = False,
         nb_cores: Optional[int] = None,
 ):
-    """indexes text embeddings using autofaiss"""
+    """
+    Build indexes from embeddings using autofaiss
+    :param image_embeddings_dir: image embeddings dir, required for image search
+    :param text_embeddings_dir: optional, text embeddings dir
+    :param image_index_dir: folder to save image index dir
+    :param text_index_dir: folder to save text index dir
+    :param index_name: index name to save, default 'faiss.index'
+    :param max_index_memory_usage: Maximum size allowed for the index, this bound is strict
+    :param current_memory_available: Memory available on the machine creating the index, having more memory is a boost
+        because it reduces the swipe between RAM and disk.
+    :param use_gpu: whether to use gpu, default False
+    :param nb_cores: Number of cores to use. Will try to guess the right number if not provided
+    :return: None, save index to image_index_dir and text_index_dir
+    """
     from autofaiss import build_index  # pylint: disable=import-outside-toplevel
 
     if image_embeddings_dir and os.path.exists(image_embeddings_dir):
@@ -145,6 +168,7 @@ def clip_index(
             f"Embedding path exist, building index "
             f"using embeddings {image_embeddings_dir} ; saving in {image_index_dir}"
         )
+        os.makedirs(image_index_dir, exist_ok=True)
         index_file = os.path.join(image_index_dir, index_name)
         index_infos_path = os.path.join(image_index_dir, index_name + ".json")
         try:
@@ -170,6 +194,7 @@ def clip_index(
             f"Embedding path exist, building index "
             f"using embeddings {text_embeddings_dir} ; saving in {text_index_dir}"
         )
+        os.makedirs(text_index_dir, exist_ok=True)
         index_file = os.path.join(text_index_dir, index_name)
         index_infos_path = os.path.join(text_index_dir, index_name + ".json")
         try:
@@ -199,7 +224,17 @@ def batch_search_index(
         threshold,
         debug=True,
 ):
-    """Search index with image inputs or image paths (batch search)"""
+    """
+    Search index with image inputs or image paths (batch search)
+    :param queries: list of image paths or list of image inputs or texts or embeddings
+    :param model: CLIP model
+    :param faiss_index: faiss index
+    :param df: corpus dataframe
+    :param num_results: int, number of results to return
+    :param threshold: float, threshold to return results
+    :param debug: bool, whether to print debug info, default True
+    :return: search results
+    """
     assert queries is not None, "queries should not be None"
     result = []
     if isinstance(queries, np.ndarray):
@@ -242,24 +277,38 @@ def clip_filter(
         texts: Optional[List[str]] = None,
         images: Optional[List[str]] = None,
         embeddings: Optional[Union[np.ndarray, List[str]]] = None,
-        output_file: str = "tmp_outputs/result.json",
+        output_file: str = "outputs/result.json",
         model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16",
-        index_dir: str = 'tmp_image_index_dir/',
+        index_dir: str = 'clip_engine/image_index/',
         index_name: str = "faiss.index",
-        corpus_file: str = 'tmp_data_dir/corpus.csv',
+        corpus_dir: str = 'clip_engine/corpus/',
         num_results: int = 10,
         threshold: Optional[float] = None,
         device: Optional[str] = None,
 ):
-    """Entry point of clip filter"""
+    """
+    Entry point of clip filter, batch search index
+    :param texts: optional, list of texts
+    :param images: optional, list of image paths or list of image inputs
+    :param embeddings: optional, list of embeddings
+    :param output_file: output file path, default outputs/result.json
+    :param model_name: clip model name
+    :param index_dir: index dir, saved by clip_index, default clip_engine/image_index/
+    :param index_name: index name, default `faiss.index`
+    :param corpus_dir: corpus dir, saved by clip_embedding, default clip_engine/corpus/
+    :param num_results: int, number of results to return
+    :param threshold: float, threshold to return results
+    :param device: pytorch device, e.g. 'cuda:0'
+    :return: batch search results
+    """
     if texts is None and images is None and embeddings is None:
         raise ValueError("must fill one of texts, images and embeddings input")
     index_file = os.path.join(index_dir, index_name)
     assert os.path.exists(index_file), f"index file {index_file} not exist"
     faiss_index = faiss.read_index(index_file)
     model = ClipModule(model_name_or_path=model_name, device=device)
-    df = pd.read_csv(corpus_file)
-    logger.info(f'Load model success. model: {model_name}, index: {faiss_index}, data size: {len(df)}')
+    df = pd.concat(pd.read_parquet(parquet_file) for parquet_file in sorted(Path(corpus_dir).glob("*.parquet")))
+    logger.info(f'Load success. model: {model_name}, index: {faiss_index}, corpus size: {len(df)}')
 
     queries = None
     if texts is not None and len(texts) > 0:
@@ -330,16 +379,28 @@ class SearchItem(BaseModel):
 
 def clip_server(
         model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16",
-        index_dir: str = 'tmp_image_index_dir/',
+        index_dir: str = 'clip_engine/image_index/',
         index_name: str = "faiss.index",
-        corpus_file: str = 'tmp_data_dir/corpus.csv',
+        corpus_dir: str = 'clip_engine/corpus/',
         num_results: int = 10,
         threshold: Optional[float] = None,
         device: Optional[str] = None,
         port: int = 8002,
         debug: bool = False,
 ):
-    """main entry point of clip search backend, start the endpoints"""
+    """
+    Main entry point of clip search backend, start the server
+    :param model_name: clip model name
+    :param index_dir: index dir, saved by clip_index, default clip_engine/image_index/
+    :param index_name: index name, default `faiss.index`
+    :param corpus_dir: corpus dir, saved by clip_embedding, default clip_engine/corpus/
+    :param num_results: int, number of results to return
+    :param threshold: float, threshold to return results
+    :param device: pytorch device, e.g. 'cuda:0'
+    :param port: server port, default 8002
+    :param debug: bool, whether to print debug info, default False
+    :return: None, start the server
+    """
     import uvicorn
     from fastapi import FastAPI
     from starlette.middleware.cors import CORSMiddleware
@@ -349,8 +410,8 @@ def clip_server(
     assert os.path.exists(index_file), f"index file {index_file} not exist"
     faiss_index = faiss.read_index(index_file)
     model = ClipModule(model_name_or_path=model_name, device=device)
-    df = pd.read_csv(corpus_file)
-    logger.info(f'Load model success. model: {model_name}, index: {faiss_index}, data size: {len(df)}')
+    df = pd.concat(pd.read_parquet(parquet_file) for parquet_file in sorted(Path(corpus_dir).glob("*.parquet")))
+    logger.info(f'Load model success. model: {model_name}, index: {faiss_index}, corpus size: {len(df)}')
 
     # define the app
     app = FastAPI()
@@ -426,6 +487,7 @@ def clip_server(
             else:
                 raise ValueError("item should have text or image or emb")
             results = batch_search_index(q, model, faiss_index, df, num_results, threshold, debug=debug)
+            # batch search result, input is one, need return the first
             sorted_text_scores = results[0]
             result_dict = {'result': sorted_text_scores}
             logger.debug(f"Successfully search done, res size: {len(sorted_text_scores)}")
