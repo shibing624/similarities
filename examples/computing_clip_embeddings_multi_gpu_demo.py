@@ -23,7 +23,8 @@ def main():
     print(f"Sentences size: {len(sentences)}, model: {model}")
 
     # Start the multi processes pool on all available CUDA devices
-    pool = model.start_multi_process_pool()
+    # target_devices = ['cuda:0', 'cuda:1', 'cuda:2', 'cuda:3']
+    pool = model.start_multi_process_pool(target_devices=None)
 
     # Compute the embeddings using the multi processes pool
     emb = model.encode_multi_process(sentences, pool)

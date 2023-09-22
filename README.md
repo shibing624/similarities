@@ -39,6 +39,7 @@
   - 支持 Cos Similarity/Dot Product/Hamming Distance/Euclidean Distance 等多种相似度计算方法
   - 支持 SemanticSearch/Faiss/Annoy/Hnsw 等多种文本搜索算法
   - 支持亿级数据高效检索
+  - 支持命令行文本转向量（多卡）、建索引、批量检索、启动服务
 - 字面匹配模型：本项目实现了Word2Vec、BM25、RankBM25、TFIDF、SimHash、同义词词林、知网Hownet义原匹配等多种字面匹配模型
 
 
@@ -51,7 +52,7 @@
   - 支持图搜图、文搜图、向量搜图
   - 支持图像embedding提取、文本embedding提取
   - 支持图像相似度计算、图文相似度计算
-  - 支持命令行启动服务部署
+  - 支持命令行图像转向量（多卡）、建索引、批量检索、启动服务
 - 图像特征提取：本项目基于cv2实现了pHash、dHash、wHash、aHash、SIFT等多种图像特征提取算法
 
 ## Demo
@@ -134,8 +135,73 @@ example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/
 
 - 前端gradio调用：[examples/faiss_clip_search_gradio_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_clip_search_gradio_demo.py)
 
-
 <img src="docs/dog-img.png"/>
+
+
+
+
+### 命令行模式（CLI）
+
+- 支持批量获取文本向量、图像向量（embedding）
+- 支持构建索引（index）
+- 支持批量检索（filter）
+- 支持启动服务（server）
+
+code: [cli.py](https://github.com/shibing624/similarities/blob/main/similarities/cli.py)
+
+```
+> similarities -h                                    
+
+NAME
+    similarities
+
+SYNOPSIS
+    similarities COMMAND
+
+COMMANDS
+    COMMAND is one of the following:
+
+     bert_embedding
+       Compute embeddings for a list of sentences
+
+     bert_index
+       Build indexes from text embeddings using autofaiss
+
+     bert_filter
+       Entry point of bert filter, batch search index
+
+     bert_server
+       Main entry point of bert search backend, start the server
+
+     clip_embedding
+       Embedding text and image with clip model
+
+     clip_index
+       Build indexes from embeddings using autofaiss
+
+     clip_filter
+       Entry point of clip filter, batch search index
+
+     clip_server
+       Main entry point of clip search backend, start the server
+```
+
+run：
+
+```shell
+pip install similarities -U
+similarities clip_embedding -h
+
+# example
+cd examples
+similarities clip_embedding data/toy_clip/
+```
+
+- `bert_embedding`等是二级命令，bert开头的是文本相关，clip开头的是图像相关
+- 各二级命令使用方法见`similarities clip_embedding -h`
+- 上面示例中`data/toy_clip/`是`clip_embedding`方法的`input_dir`参数，输入文件目录（required）
+
+
 
 ## Contact
 
