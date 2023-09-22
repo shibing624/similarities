@@ -59,7 +59,7 @@
 
 Text Search Demo: https://huggingface.co/spaces/shibing624/similarities
 
-![](docs/hf_search.png)
+![](https://github.com/shibing624/similarities/blob/main/docs/hf_search.png)
 
 
 ## Install
@@ -125,7 +125,7 @@ example: [examples/literal_text_semantic_search_demo.py](https://github.com/shib
 
 example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/image_semantic_search_demo.py)
 
-![image_sim](docs/image_sim.png)
+![image_sim](https://github.com/shibing624/similarities/blob/main/docs/image_sim.png)
 
 #### Faiss高效向量检索，适合亿级数据集
 
@@ -135,7 +135,7 @@ example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/
 
 - 前端gradio调用：[examples/faiss_clip_search_gradio_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_clip_search_gradio_demo.py)
 
-<img src="docs/dog-img.png"/>
+<img src="https://github.com/shibing624/similarities/blob/main/docs/dog-img.png"/>
 
 
 
@@ -210,7 +210,7 @@ similarities clip_embedding data/toy_clip/
 - 邮件我：xuming: xuming624@qq.com
 - 微信我： 加我*微信号：xuming624, 备注：姓名-公司-NLP* 进NLP交流群。
 
-<img src="docs/wechat.jpeg" width="200" />
+<img src="https://github.com/shibing624/similarities/blob/main/docs/wechat.jpeg" width="200" />
 
 ## Citation
 
