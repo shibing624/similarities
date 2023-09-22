@@ -20,7 +20,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--base_url', default="http://0.0.0.0:8002", type=str, help='Base url of clip server')
     parser.add_argument('--image_column_name', default="image_path", type=str, help='Image column name to show')
-    parser.add_argument('--share', default=False, help='share gradio')
+    parser.add_argument('--share', default=False, type=bool, help='share gradio')
     parser.add_argument('--port', default=8082, type=int, help='Port of gradio demo')
     args = parser.parse_args()
     print(args)

@@ -43,11 +43,11 @@
 
 
 ### 图像相似度计算/图文相似度计算 + 图搜图/文搜图
-- CLIP(Contrastive Language-Image Pre-Training)模型：图文匹配模型，可用于图文特征（embeddings）、相似度计算、图文检索、零样本图片分类，本项目基于PyTorch实现了CLIP模型的向量表征、构建索引（基于autofaiss）、批量检索、后台服务（基于Fastapi）、前端展现（基于gradio）功能
+- CLIP(Contrastive Language-Image Pre-Training)模型：图文匹配模型，可用于图文特征（embeddings）、相似度计算、图文检索、零样本图片分类，本项目基于PyTorch实现了CLIP模型的向量表征、构建索引（基于AutoFaiss）、批量检索、后台服务（基于FastAPI）、前端展现（基于Gradio）功能
   - 支持[openai/clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32)等CLIP系列模型
-  - 支持[OFA-Sys/chinese-clip-vit-base-patch16](https://huggingface.co/OFA-Sys/chinese-clip-vit-base-patch16)等Chinese-CLIP系列模型
-  - 支持前后端分离部署
-  - 支持亿级数据高效检索
+  - 支持[OFA-Sys/chinese-clip-vit-huge-patch14](https://huggingface.co/OFA-Sys/chinese-clip-vit-huge-patch14)等Chinese-CLIP系列模型
+  - 支持前后端分离部署，FastAPI后端服务，Gradio前端展现
+  - 支持亿级数据高效检索，基于Faiss检索，支持GPU加速
   - 支持图搜图、文搜图、向量搜图
   - 支持图像embedding提取、文本embedding提取
   - 支持图像相似度计算、图文相似度计算
