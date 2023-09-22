@@ -135,7 +135,7 @@ example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/
 - 前端gradio调用：[examples/faiss_clip_search_gradio_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_clip_search_gradio_demo.py)
 
 
-<img src="docs/dog.png" width="600" />
+<img src="docs/dog-img.png"/>
 
 ## Contact
 
