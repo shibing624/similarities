@@ -156,7 +156,7 @@ class ClipModule(nn.Module):
 
     def encode(
             self,
-            sentences: Union[str, List[str]],
+            sentences: Union[str, List[str], Image.Image, List[Image.Image]],
             batch_size: int = 32,
             show_progress_bar: bool = False,
             convert_to_numpy: bool = True,
@@ -166,7 +166,7 @@ class ClipModule(nn.Module):
         """
         Computes sentence and images embeddings
 
-        :param sentences: the sentences to embed
+        :param sentences: list of sentences or list of Image.Image
         :param batch_size: the batch size used for the computation
         :param show_progress_bar: Output a progress bar when encode sentences
         :param convert_to_numpy: If true, the output is a list of numpy vectors. Else, it is a list of pytorch tensors.
