@@ -51,6 +51,7 @@
   - 支持图搜图、文搜图、向量搜图
   - 支持图像embedding提取、文本embedding提取
   - 支持图像相似度计算、图文相似度计算
+  - 支持命令行启动服务部署
 - 图像特征提取：本项目基于cv2实现了pHash、dHash、wHash、aHash、SIFT等多种图像特征提取算法
 
 ## Demo
@@ -105,7 +106,11 @@ example: [examples/text_semantic_search_demo.py](https://github.com/shibing624/s
 example: [examples/fast_text_semantic_search_demo.py](https://github.com/shibing624/similarities/blob/main/examples/fast_text_semantic_search_demo.py)
 
 #### Faiss高效向量检索，适合亿级数据集
-example: [examples/faiss_bert_search_server_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_bert_search_server_demo.py)
+
+- 文本转向量，建索引，批量检索，启动服务：[examples/faiss_bert_search_server_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_bert_search_server_demo.py)
+
+- 前端python调用：[examples/faiss_bert_search_client_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_bert_search_client_demo.py)
+
 
 ### 3. 基于字面的文本相似度计算和文本搜索
 
@@ -122,9 +127,15 @@ example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/
 ![image_sim](docs/image_sim.png)
 
 #### Faiss高效向量检索，适合亿级数据集
-example: [examples/faiss_clip_search_server_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_clip_search_server_demo.py)
+
+- 图像转向量，建索引，批量检索，启动服务：[examples/faiss_clip_search_server_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_clip_search_server_demo.py)
+
+- 前端python调用：[examples/faiss_clip_search_client_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_clip_search_client_demo.py)
+
+- 前端gradio调用：[examples/faiss_clip_search_gradio_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_clip_search_gradio_demo.py)
 
 
+<img src="docs/dog.png" width="600" />
 
 ## Contact
 
