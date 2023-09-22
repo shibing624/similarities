@@ -269,7 +269,7 @@ class ClipModule(nn.Module):
 
     def encode_multi_process(
             self,
-            sentences: List[str],
+            sentences: Union[List[str], List[Image.Image]],
             pool: Dict[str, object],
             batch_size: int = 32,
             normalize_embeddings: bool = False,
@@ -280,7 +280,7 @@ class ClipModule(nn.Module):
         and sent to individual processes, which encode these on the different GPUs. This method is only suitable
         for encoding large sets of sentences
 
-        :param sentences: List of sentences
+        :param sentences: List of sentences, or list of images
         :param pool: A pool of workers started with start_multi_process_pool
         :param batch_size: Encode sentences with batch size
         :param normalize_embeddings: bool, Whether to normalize embeddings before returning them

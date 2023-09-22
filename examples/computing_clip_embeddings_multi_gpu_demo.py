@@ -9,14 +9,16 @@ when encoding large image collections.
 This basic example loads a pre-trained model from the web and uses it to
 generate embeddings for a given list of sentences.
 """
-
 import sys
+
+from PIL import Image
 
 sys.path.append('..')
 from similarities import ClipModule
 
 
 def main():
+    # 1. Compute embeddings for sentences
     # Create a large list of sentences
     sentences = ["This is sentence {}".format(i) for i in range(10000)]
     model = ClipModule("OFA-Sys/chinese-clip-vit-base-patch16")
@@ -31,6 +33,15 @@ def main():
     print(f"Embeddings computed. Shape: {emb.shape}")
 
     # Optional: Stop the process in the pool
+    model.stop_multi_process_pool(pool)
+
+    # 2. Compute embeddings for images
+    image_paths = ['data/image1.png'] * 100
+    # convert to PIL images
+    imgs = [Image.open(i) for i in image_paths]
+    pool = model.start_multi_process_pool(target_devices=None)
+    emb = model.encode_multi_process(imgs, pool)
+    print(f"Embeddings computed. Shape: {emb.shape}")
     model.stop_multi_process_pool(pool)
 
 
