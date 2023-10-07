@@ -11,7 +11,7 @@ import six
 import requests
 import os
 import sys
-from tqdm.autonotebook import tqdm
+from tqdm import tqdm
 
 
 def http_get(url, path, extract: bool = True):

@@ -5,7 +5,7 @@
 """
 
 import queue
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 import torch
@@ -303,4 +303,3 @@ def community_detection(embeddings, threshold=0.75, min_community_size=10, init_
                 extracted_ids.add(idx)
 
     return unique_communities
-
