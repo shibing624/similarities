@@ -34,14 +34,14 @@ def preprocess_image(image_input: Union[str, np.ndarray, bytes]) -> Image.Image:
         elif image_input.endswith((".png", ".jpg", ".jpeg", ".bmp")) and os.path.isfile(image_input):
             return Image.open(image_input)
         else:
-            raise ValueError("Unsupported image input type")
+            raise ValueError(f"Unsupported image input type, image path: {image_input}")
     elif isinstance(image_input, np.ndarray):
         return Image.fromarray(image_input)
     elif isinstance(image_input, bytes):
         img_data = base64.b64decode(image_input)
         return Image.open(BytesIO(img_data))
     else:
-        raise ValueError("Unsupported image input type")
+        raise ValueError(f"Unsupported image input type, image input: {image_input}")
 
 
 def clip_embedding(
