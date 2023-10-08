@@ -27,7 +27,7 @@ def main():
         enable_text=False,
         target_devices=None,
         normalize_embeddings=True,
-        header=1,
+        header=0,
     )
 
     # Build index
