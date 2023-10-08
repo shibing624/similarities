@@ -56,6 +56,9 @@
 - 图像特征提取：本项目基于cv2实现了pHash、dHash、wHash、aHash、SIFT等多种图像特征提取算法
 
 ## Demo
+Image Search Demo: https://huggingface.co/spaces/shibing624/CLIP-Image-Search
+
+![](https://github.com/shibing624/similarities/blob/main/docs/white_cat.png)
 
 Text Search Demo: https://huggingface.co/spaces/shibing624/similarities
 
