@@ -21,6 +21,7 @@ def main():
         target_devices=None,
         normalize_embeddings=True,
         text_column_name="sentence",
+        header=0,
         names=['sentence'],
     )
 
