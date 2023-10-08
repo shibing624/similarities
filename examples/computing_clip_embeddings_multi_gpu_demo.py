@@ -29,7 +29,7 @@ def main():
     pool = model.start_multi_process_pool(target_devices=None)
 
     # Compute the embeddings using the multi processes pool
-    emb = model.encode_multi_process(sentences, pool)
+    emb = model.encode_multi_process(sentences, pool, normalize_embeddings=True)
     print(f"Embeddings computed. Shape: {emb.shape}")
 
     # Optional: Stop the process in the pool
@@ -40,7 +40,7 @@ def main():
     # convert to PIL images
     imgs = [Image.open(i) for i in image_paths]
     pool = model.start_multi_process_pool(target_devices=None)
-    emb = model.encode_multi_process(imgs, pool)
+    emb = model.encode_multi_process(imgs, pool, normalize_embeddings=True)
     print(f"Embeddings computed. Shape: {emb.shape}")
     model.stop_multi_process_pool(pool)
 

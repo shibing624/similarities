@@ -222,7 +222,7 @@ def batch_search_index(
         df,
         num_results,
         threshold,
-        debug=True,
+        debug=False,
 ):
     """
     Search index with image inputs or image paths (batch search)
@@ -285,6 +285,7 @@ def clip_filter(
         num_results: int = 10,
         threshold: Optional[float] = None,
         device: Optional[str] = None,
+        debug: bool = False,
 ):
     """
     Entry point of clip filter, batch search index
@@ -299,6 +300,7 @@ def clip_filter(
     :param num_results: int, number of results to return
     :param threshold: float, threshold to return results
     :param device: pytorch device, e.g. 'cuda:0'
+    :param debug: bool, whether to print debug info, default False
     :return: batch search results
     """
     if texts is None and images is None and embeddings is None:
@@ -324,7 +326,7 @@ def clip_filter(
         if len(queries.shape) == 1:
             queries = np.expand_dims(queries, axis=0)
         logger.debug(f"Query: embeddings shape {queries.shape}")
-    result = batch_search_index(queries, model, faiss_index, df, num_results, threshold)
+    result = batch_search_index(queries, model, faiss_index, df, num_results, threshold, debug=debug)
     # Save results
     if output_file:
         os.makedirs(os.path.dirname(output_file), exist_ok=True)

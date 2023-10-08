@@ -142,7 +142,7 @@ def batch_search_index(
         df,
         num_results,
         threshold,
-        debug=True,
+        debug=False,
 ):
     """
     Search index with text inputs (batch search)
@@ -199,6 +199,7 @@ def bert_filter(
         num_results: int = 10,
         threshold: Optional[float] = None,
         device: Optional[str] = None,
+        debug: bool = False,
 ):
     """
     Entry point of bert filter, batch search index
@@ -211,6 +212,7 @@ def bert_filter(
     :param num_results: int, number of results to return
     :param threshold: float, threshold to return results
     :param device: pytorch device, e.g. 'cuda:0'
+    :param debug: whether to print debug info, default False
     :return: batch search results
     """
     assert isinstance(queries, list), f"queries type error, queries: {queries}"
@@ -221,7 +223,7 @@ def bert_filter(
     df = pd.concat(pd.read_parquet(parquet_file) for parquet_file in sorted(Path(corpus_dir).glob("*.parquet")))
     logger.info(f'Load success. model: {model_name}, index: {faiss_index}, corpus size: {len(df)}')
 
-    result = batch_search_index(queries, model, faiss_index, df, num_results, threshold)
+    result = batch_search_index(queries, model, faiss_index, df, num_results, threshold, debug=debug)
     # Save results
     if output_file:
         os.makedirs(os.path.dirname(output_file), exist_ok=True)

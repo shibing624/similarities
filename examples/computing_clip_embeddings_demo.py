@@ -18,7 +18,7 @@ def main():
     print(f"data size: {len(image_paths)}")
     # convert to PIL images
     imgs = [Image.open(i) for i in image_paths]
-    emb = model.encode(imgs)
+    emb = model.encode(imgs, normalize_embeddings=True)
     print(f"Embeddings computed. Shape: {emb.shape}")
 
 
