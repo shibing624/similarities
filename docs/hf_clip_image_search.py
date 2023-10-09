@@ -99,6 +99,10 @@ def preprocess_image(image_input) -> Image.Image:
 
 
 def main():
+    text_examples = [["黑猫"], ["坐着的女孩"], ["两只狗拉雪橇"], ["tiger"], ["full Moon"]]
+    image_examples = [["photos/YMJ1IiItvPY.jpg"], ["photos/6Fo47c49zEQ.jpg"], ["photos/OM7CvKnhjfs.jpg"],
+                      ["photos/lyStEjlKNSw.jpg"], ["photos/mCbo65vkb80.jpg"]]
+
     # we get about 25k images from Unsplash
     img_folder = 'photos/'
     clip_folder = 'photos/csv/'
@@ -186,11 +190,19 @@ def main():
             with gr.Row():
                 with gr.Column():
                     input_text = gr.Textbox(lines=2, placeholder="Enter text here...")
+            gr.Examples(
+                examples=text_examples,
+                inputs=[input_text],
+            )
 
         with gr.Tab("Image"):
             with gr.Row():
                 with gr.Column():
                     input_image = gr.Image(type="filepath", label="Upload an image")
+            gr.Examples(
+                examples=image_examples,
+                inputs=[input_image],
+            )
 
         btn_submit = gr.Button(label="Submit")
         output = gr.outputs.HTML(label="Search results")

@@ -20,7 +20,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--base_url', default="http://0.0.0.0:8002", type=str, help='Base url of clip server')
     parser.add_argument('--image_column_name', default="image_path", type=str, help='Image column name to show')
-    parser.add_argument('--share', default=False, type=bool, help='share gradio')
     parser.add_argument('--port', default=8082, type=int, help='Port of gradio demo')
     args = parser.parse_args()
     print(args)
@@ -71,6 +70,9 @@ def main():
     def reset_user_input():
         return '', None
 
+    text_examples = [["狮子"], ["水果"], ["tiger"]]
+    image_examples = [["data/image1.png"], ["data/image10.png"], ["data/image13-like-image1.png"]]
+
     with gr.Blocks() as demo:
         gr.HTML("""<h1 align="center">CLIP Image Search</h1>""")
         gr.Markdown(
@@ -79,19 +81,26 @@ def main():
             with gr.Row():
                 with gr.Column():
                     input_text = gr.Textbox(lines=2, placeholder="Enter text here...")
+            gr.Examples(
+                examples=text_examples,
+                inputs=[input_text],
+            )
 
         with gr.Tab("Image"):
             with gr.Row():
                 with gr.Column():
                     input_image = gr.Image(type="filepath", label="Upload an image")
-
+            gr.Examples(
+                examples=image_examples,
+                inputs=[input_image],
+            )
         btn_submit = gr.Button(label="Submit")
         output = gr.outputs.HTML(label="Search results")
         btn_submit.click(search_image, inputs=[input_text, input_image],
                          outputs=output, show_progress=True)
         btn_submit.click(reset_user_input, outputs=[input_text, input_image])
 
-    demo.queue().launch(server_name='0.0.0.0', server_port=args.port, share=args.share)
+    demo.queue().launch(server_name='0.0.0.0', server_port=args.port)
 
 
 if __name__ == '__main__':
