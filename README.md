@@ -89,7 +89,6 @@ example: [examples/text_similarity_demo.py](https://github.com/shibing624/simila
 
 ```python
 from similarities import BertSimilarity
-
 m = BertSimilarity(model_name_or_path="shibing624/text2vec-base-chinese")
 r = m.similarity('如何更换花呗绑定银行卡', '花呗更改绑定银行卡')
 print(f"similarity score: {float(r)}")  # similarity score: 0.855146050453186
