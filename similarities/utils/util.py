@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 @author:XuMing(xuming624@qq.com)
-@description: 
+@description:
+copy from https://github.com/UKPLab/sentence-transformers/blob/master/sentence_transformers/util.py
 """
 
 import queue
