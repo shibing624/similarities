@@ -21,7 +21,7 @@ import sys
 from text2vec import SentenceModel
 
 sys.path.append('..')
-from similarities.utils import community_detection
+from similarities import community_detection
 import time
 
 # Model for computing sentence embeddings. We use one trained for similar questions detection
@@ -58,6 +58,7 @@ for i, cluster in enumerate(clusters):
     print("\nCluster {}, #{} Elements ".format(i + 1, len(cluster)))
     for sentence_id in cluster[0:3]:
         print("\t", corpus_sentences[sentence_id])
-    print("\t", "...")
-    for sentence_id in cluster[-3:]:
-        print("\t", corpus_sentences[sentence_id])
+    if len(cluster) > 3:
+        print("\t", "...")
+        for sentence_id in cluster[-3:]:
+            print("\t", corpus_sentences[sentence_id])
