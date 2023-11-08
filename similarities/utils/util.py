@@ -235,7 +235,7 @@ def paraphrase_mining_embeddings(
     return pairs_list
 
 
-def community_detection(embeddings, threshold=0.75, min_community_size=10, batch_size=1024):
+def community_detection(embeddings, threshold=0.75, min_community_size=10, batch_size=10000):
     """
     Function for Fast Community Detection
     Finds in the embeddings all communities, i.e. embeddings that are close (closer than threshold).
