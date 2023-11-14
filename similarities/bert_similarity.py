@@ -15,9 +15,9 @@ from typing import List, Union, Dict
 import numpy as np
 from loguru import logger
 from text2vec import SentenceModel
-from similarities.utils.util import cos_sim, semantic_search, dot_score
 
 from similarities.similarity import SimilarityABC
+from similarities.utils.util import cos_sim, semantic_search, dot_score
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TOKENIZERS_PARALLELISM"] = "TRUE"
@@ -86,11 +86,14 @@ class BertSimilarity(SimilarityABC):
         else:
             return getattr(self.sentence_model.bert.pooler.dense, "out_features", None)
 
-    def add_corpus(self, corpus: Union[List[str], Dict[str, str]]):
+    def add_corpus(self, corpus: Union[List[str], Dict[str, str]], batch_size: int = 32,
+                   normalize_embeddings: bool = True):
         """
         Extend the corpus with new documents.
         :param corpus: corpus of documents to use for similarity queries.
-        :return: self.corpus, self.corpus embeddings
+        :param batch_size: batch size for computing embeddings
+        :param normalize_embeddings: normalize embeddings before computing similarity
+        :return: corpus, corpus embeddings
         """
         new_corpus = {}
         start_id = len(self.corpus) if self.corpus else 0
@@ -103,7 +106,12 @@ class BertSimilarity(SimilarityABC):
                     new_corpus[id] = doc
         self.corpus.update(new_corpus)
         logger.info(f"Start computing corpus embeddings, new docs: {len(new_corpus)}")
-        corpus_embeddings = self.get_embeddings(list(new_corpus.values()), show_progress_bar=True).tolist()
+        corpus_embeddings = self.get_embeddings(
+            list(new_corpus.values()),
+            batch_size=batch_size,
+            show_progress_bar=True,
+            normalize_embeddings=normalize_embeddings,
+        ).tolist()
         if self.corpus_embeddings:
             self.corpus_embeddings = self.corpus_embeddings + corpus_embeddings
         else:
@@ -118,7 +126,7 @@ class BertSimilarity(SimilarityABC):
             convert_to_numpy: bool = True,
             convert_to_tensor: bool = False,
             device: str = None,
-            normalize_embeddings: bool = False,
+            normalize_embeddings: bool = True,
     ):
         """
         Returns the embeddings for a batch of sentences.

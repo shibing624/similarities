@@ -64,7 +64,7 @@ class ClipSimilarity(SimilarityABC):
             convert_to_numpy: bool = True,
             convert_to_tensor: bool = False,
             device: str = None,
-            normalize_embeddings: bool = False,
+            normalize_embeddings: bool = True,
     ):
         """
         Returns the embeddings for a batch of images.
@@ -93,14 +93,9 @@ class ClipSimilarity(SimilarityABC):
             normalize_embeddings=normalize_embeddings,
         )
 
-    def add_corpus(self, corpus: Union[List[Image.Image], Dict[str, Image.Image]]):
-        """
-        Extend the corpus with new documents.
-
-        Parameters
-        ----------
-        corpus : list of str or dict
-        """
+    def add_corpus(self, corpus: Union[List[Image.Image], Dict[str, Image.Image]], batch_size: int = 32,
+                   normalize_embeddings: bool = True):
+        """Extend the corpus with new documents."""
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         if isinstance(corpus, list):
@@ -113,7 +108,12 @@ class ClipSimilarity(SimilarityABC):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
-        corpus_embeddings = self.get_embeddings(list(corpus_new.values()), show_progress_bar=True).tolist()
+        corpus_embeddings = self.get_embeddings(
+            list(corpus_new.values()),
+            show_progress_bar=True,
+            batch_size=batch_size,
+            normalize_embeddings=normalize_embeddings,
+        ).tolist()
         if self.corpus_embeddings:
             self.corpus_embeddings += corpus_embeddings
         else:
