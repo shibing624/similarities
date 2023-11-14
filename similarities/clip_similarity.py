@@ -61,12 +61,20 @@ class ClipSimilarity(SimilarityABC):
             text_or_img: Union[List[Image.Image], Image.Image, str, List[str]],
             batch_size: int = 32,
             show_progress_bar: bool = False,
+            convert_to_numpy: bool = True,
+            convert_to_tensor: bool = False,
+            device: str = None,
+            normalize_embeddings: bool = False,
     ):
         """
         Returns the embeddings for a batch of images.
         :param text_or_img: list of str or Image.Image or image list
         :param batch_size: batch size
         :param show_progress_bar: show progress bar
+        :param convert_to_numpy: convert embeddings to numpy
+        :param convert_to_tensor: convert embeddings to tensor
+        :param device: device
+        :param normalize_embeddings: normalize embeddings
         :return: np.ndarray, embeddings for the given images
         """
         if isinstance(text_or_img, str):
@@ -75,7 +83,15 @@ class ClipSimilarity(SimilarityABC):
             text_or_img = [text_or_img]
         if isinstance(text_or_img, list) and isinstance(text_or_img[0], Image.Image):
             text_or_img = [self._convert_to_rgb(i) for i in text_or_img]
-        return self.clip_model.encode(text_or_img, batch_size=batch_size, show_progress_bar=show_progress_bar)
+        return self.clip_model.encode(
+            text_or_img,
+            batch_size=batch_size,
+            show_progress_bar=show_progress_bar,
+            convert_to_numpy=convert_to_numpy,
+            convert_to_tensor=convert_to_tensor,
+            device=device,
+            normalize_embeddings=normalize_embeddings,
+        )
 
     def add_corpus(self, corpus: Union[List[Image.Image], Dict[str, Image.Image]]):
         """
@@ -108,21 +124,23 @@ class ClipSimilarity(SimilarityABC):
             self,
             a: Union[List[Image.Image], Image.Image, str, List[str]],
             b: Union[List[Image.Image], Image.Image, str, List[str]],
-            score_function: str = "cos_sim"
+            score_function: str = "cos_sim",
+            **kwargs
     ):
         """
         Compute similarity between two texts.
         :param a: list of str or str
         :param b: list of str or str
         :param score_function: function to compute similarity, default cos_sim
+        :param kwargs: additional arguments for the similarity function
         :return: similarity score, torch.Tensor, Matrix with res[i][j] = cos_sim(a[i], b[j])
         """
         if score_function not in self.score_functions:
             raise ValueError(f"score function: {score_function} must be either (cos_sim) for cosine similarity"
                              " or (dot) for dot product")
         score_function = self.score_functions[score_function]
-        text_emb1 = self.get_embeddings(a)
-        text_emb2 = self.get_embeddings(b)
+        text_emb1 = self.get_embeddings(a, **kwargs)
+        text_emb2 = self.get_embeddings(b, **kwargs)
 
         return score_function(text_emb1, text_emb2)
 
@@ -130,11 +148,12 @@ class ClipSimilarity(SimilarityABC):
         """Compute cosine distance between two texts."""
         return 1 - self.similarity(a, b)
 
-    def most_similar(self, queries, topn: int = 10):
+    def most_similar(self, queries, topn: int = 10, **kwargs):
         """
         Find the topn most similar texts to the queries against the corpus.
         :param queries: text or image
         :param topn: int
+        :param kwargs: other params
         :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
@@ -144,7 +163,7 @@ class ClipSimilarity(SimilarityABC):
         result = {qid: {} for qid, query in queries.items()}
         queries_ids_map = {i: id for i, id in enumerate(list(queries.keys()))}
         queries_texts = list(queries.values())
-        queries_embeddings = self.get_embeddings(queries_texts)
+        queries_embeddings = self.get_embeddings(queries_texts, **kwargs)
         corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
         all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn)
         for idx, hits in enumerate(all_hits):

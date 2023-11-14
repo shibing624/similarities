@@ -133,20 +133,21 @@ class BertSimilarity(SimilarityABC):
             normalize_embeddings=normalize_embeddings,
         )
 
-    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]], score_function: str = "cos_sim"):
+    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]], score_function: str = "cos_sim", **kwargs):
         """
         Compute similarity between two texts.
         :param a: list of str or str
         :param b: list of str or str
         :param score_function: function to compute similarity, default cos_sim
+        :param kwargs: additional arguments for the similarity function
         :return: similarity score, torch.Tensor, Matrix with res[i][j] = cos_sim(a[i], b[j])
         """
         if score_function not in self.score_functions:
             raise ValueError(f"score function: {score_function} must be either (cos_sim) for cosine similarity"
                              " or (dot) for dot product")
         score_function = self.score_functions[score_function]
-        text_emb1 = self.get_embeddings(a)
-        text_emb2 = self.get_embeddings(b)
+        text_emb1 = self.get_embeddings(a, **kwargs)
+        text_emb2 = self.get_embeddings(b, **kwargs)
 
         return score_function(text_emb1, text_emb2)
 
@@ -155,13 +156,14 @@ class BertSimilarity(SimilarityABC):
         return 1 - self.similarity(a, b)
 
     def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10,
-                     score_function: str = "cos_sim"):
+                     score_function: str = "cos_sim", **kwargs):
         """
         Find the topn most similar texts to the queries against the corpus.
             It can be used for Information Retrieval / Semantic Search for corpora up to about 1 Million entries.
         :param queries: str or list of str
         :param topn: int
         :param score_function: function to compute similarity, default cos_sim
+        :param kwargs: additional arguments for the similarity function
         :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
@@ -175,7 +177,7 @@ class BertSimilarity(SimilarityABC):
         result = {qid: {} for qid, query in queries.items()}
         queries_ids_map = {i: id for i, id in enumerate(list(queries.keys()))}
         queries_texts = list(queries.values())
-        queries_embeddings = self.get_embeddings(queries_texts, convert_to_tensor=True)
+        queries_embeddings = self.get_embeddings(queries_texts, convert_to_tensor=True, **kwargs)
         corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
         all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn, score_function=score_function)
         for idx, hits in enumerate(all_hits):

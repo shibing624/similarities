@@ -160,6 +160,7 @@ class ClipModule(nn.Module):
             batch_size: int = 32,
             show_progress_bar: bool = False,
             convert_to_numpy: bool = True,
+            convert_to_tensor: bool = False,
             normalize_embeddings: bool = False,
             device: str = None,
     ):
@@ -170,6 +171,7 @@ class ClipModule(nn.Module):
         :param batch_size: the batch size used for the computation
         :param show_progress_bar: Output a progress bar when encode sentences
         :param convert_to_numpy: If true, the output is a list of numpy vectors. Else, it is a list of pytorch tensors.
+        :param convert_to_tensor: If true, the output is a stacked tensor. Else, it is a list of pytorch tensors.
         :param normalize_embeddings: If set to true, returned vectors will have length 1.
             In that case, the faster dot-product (util.dot_score) instead of cosine similarity can be used.
         :param device: Which device to use for the computation
@@ -186,7 +188,8 @@ class ClipModule(nn.Module):
             sentences = [sentences]
             input_was_string = True
         self.model.to(device)
-
+        if convert_to_tensor:
+            convert_to_numpy = False
         all_embeddings = []
         length_sorted_idx = np.argsort([-self._text_length(sent) for sent in sentences])
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
