@@ -13,6 +13,7 @@ from similarities import clip_embedding, clip_index, clip_filter, clip_server
 
 
 def main():
+    model_name = "OFA-Sys/chinese-clip-vit-base-patch16"
     # Build embedding
     clip_embedding(
         input_dir='data/toy_clip/',
@@ -20,7 +21,7 @@ def main():
         image_embeddings_dir='clip_engine/image_emb/',
         text_embeddings_dir=None,
         corpus_dir='clip_engine/corpus/',
-        model_name="OFA-Sys/chinese-clip-vit-base-patch16",
+        model_name=model_name,
         batch_size=12,
         enable_image=True,
         image_column_name='image_path',
@@ -48,7 +49,7 @@ def main():
     clip_filter(
         texts=sentences,
         output_file="tmp_outputs/result_txt.json",
-        model_name="OFA-Sys/chinese-clip-vit-base-patch16",
+        model_name=model_name,
         index_dir='clip_engine/image_index/',
         index_name="faiss.index",
         corpus_dir='clip_engine/corpus/',
@@ -62,7 +63,7 @@ def main():
     clip_filter(
         images=images,
         output_file="tmp_outputs/result_img.json",
-        model_name="OFA-Sys/chinese-clip-vit-base-patch16",
+        model_name=model_name,
         index_dir='clip_engine/image_index/',
         index_name="faiss.index",
         corpus_dir='clip_engine/corpus/',
@@ -75,7 +76,7 @@ def main():
     clip_filter(
         embeddings=np.random.randn(1, 512),
         output_file="tmp_outputs/result_emb.json",
-        model_name="OFA-Sys/chinese-clip-vit-base-patch16",
+        model_name=model_name,
         index_dir='clip_engine/image_index/',
         index_name="faiss.index",
         corpus_dir='clip_engine/corpus/',
@@ -86,7 +87,7 @@ def main():
 
     # Start Server
     clip_server(
-        model_name="OFA-Sys/chinese-clip-vit-base-patch16",
+        model_name=model_name,
         index_dir='clip_engine/image_index/',
         index_name="faiss.index",
         corpus_dir='clip_engine/corpus/',

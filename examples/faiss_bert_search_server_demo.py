@@ -11,13 +11,14 @@ from similarities import bert_embedding, bert_index, bert_filter, bert_server
 
 
 def main():
+    model_name = "shibing624/text2vec-base-chinese"
     # Build embedding
     bert_embedding(
         input_dir='data/toy_bert/',
         embeddings_dir='bert_engine/text_emb/',
         corpus_dir='bert_engine/corpus/',
-        model_name="shibing624/text2vec-base-chinese",
-        batch_size=12,
+        model_name=model_name,
+        batch_size=128,
         target_devices=None,
         normalize_embeddings=True,
         text_column_name="sentence",
@@ -41,7 +42,7 @@ def main():
     bert_filter(
         queries=sentences,
         output_file=f"outputs/result.json",
-        model_name="shibing624/text2vec-base-chinese",
+        model_name=model_name,
         index_dir='bert_engine/text_index/',
         index_name="faiss.index",
         corpus_dir="bert_engine/corpus/",
@@ -52,7 +53,7 @@ def main():
 
     # Server
     bert_server(
-        model_name="shibing624/text2vec-base-chinese",
+        model_name=model_name,
         index_dir='bert_engine/text_index/',
         index_name="faiss.index",
         corpus_dir="bert_engine/corpus/",
