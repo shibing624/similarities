@@ -48,7 +48,7 @@ def main():
     sentences = ['老虎', '花朵']
     clip_filter(
         texts=sentences,
-        output_file="tmp_outputs/result_txt.json",
+        output_file="tmp_outputs/result_txt.jsonl",
         model_name=model_name,
         index_dir='clip_engine/image_index/',
         index_name="faiss.index",

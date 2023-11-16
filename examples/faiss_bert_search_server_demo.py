@@ -41,7 +41,7 @@ def main():
     sentences = ['如何更换花呗绑定银行卡', '花呗更改绑定银行卡']
     bert_filter(
         queries=sentences,
-        output_file=f"outputs/result.json",
+        output_file=f"outputs/result.jsonl",
         model_name=model_name,
         index_dir='bert_engine/text_index/',
         index_name="faiss.index",

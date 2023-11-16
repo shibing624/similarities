@@ -191,7 +191,7 @@ def batch_search_index(
 
 def bert_filter(
         queries: List[str],
-        output_file: str = "outputs/result.json",
+        output_file: str = "outputs/result.jsonl",
         model_name: str = "shibing624/text2vec-base-chinese",
         index_dir: str = 'bert_engine/text_index/',
         index_name: str = "faiss.index",

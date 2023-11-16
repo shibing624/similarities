@@ -277,7 +277,7 @@ def clip_filter(
         texts: Optional[List[str]] = None,
         images: Optional[List[str]] = None,
         embeddings: Optional[Union[np.ndarray, List[str]]] = None,
-        output_file: str = "outputs/result.json",
+        output_file: str = "outputs/result.jsonl",
         model_name: str = "OFA-Sys/chinese-clip-vit-base-patch16",
         index_dir: str = 'clip_engine/image_index/',
         index_name: str = "faiss.index",
