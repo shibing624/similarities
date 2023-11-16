@@ -21,9 +21,10 @@ class AnnoySimilarity(BertSimilarity):
             self,
             corpus: Union[List[str], Dict[str, str]] = None,
             model_name_or_path="shibing624/text2vec-base-chinese",
-            n_trees: int = 256
+            n_trees: int = 256,
+            device: str = None
     ):
-        super().__init__(corpus, model_name_or_path)
+        super().__init__(corpus, model_name_or_path, device=device)
         self.index = None
         self.embedding_size = self.get_sentence_embedding_dimension()
         self.n_trees = n_trees
@@ -81,7 +82,7 @@ class AnnoySimilarity(BertSimilarity):
             logger.warning("No index path given. Index not loaded.")
 
     def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10,
-                     score_function: str = "cos_sim"):
+                     score_function: str = "cos_sim", **kwargs):
         """Find the topn most similar texts to the query against the corpus."""
         result = {}
         if self.corpus_embeddings and self.index is None:
@@ -97,7 +98,7 @@ class AnnoySimilarity(BertSimilarity):
             queries = {id: query for id, query in enumerate(queries)}
         result = {qid: {} for qid, query in queries.items()}
         queries_texts = list(queries.values())
-        queries_embeddings = self.get_embeddings(queries_texts)
+        queries_embeddings = self.get_embeddings(queries_texts, **kwargs)
         # Annoy get_nns_by_vector can only search for one vector at a time
         for idx, (qid, query) in enumerate(queries.items()):
             corpus_ids, distances = self.index.get_nns_by_vector(queries_embeddings[idx], topn, include_distances=True)
@@ -118,9 +119,10 @@ class HnswlibSimilarity(BertSimilarity):
             self,
             corpus: Union[List[str], Dict[str, str]] = None,
             model_name_or_path="shibing624/text2vec-base-chinese",
-            ef_construction: int = 400, M: int = 64, ef: int = 50
+            ef_construction: int = 400, M: int = 64, ef: int = 50,
+            device: str = None,
     ):
-        super().__init__(corpus, model_name_or_path)
+        super().__init__(corpus, model_name_or_path, device=device)
         self.embedding_size = self.get_sentence_embedding_dimension()
         self.ef_construction = ef_construction
         self.M = M
@@ -186,7 +188,7 @@ class HnswlibSimilarity(BertSimilarity):
             logger.warning("No index path given. Index not loaded.")
 
     def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10,
-                     score_function: str = "cos_sim"):
+                     score_function: str = "cos_sim", **kwargs):
         """Find the topn most similar texts to the query against the corpus."""
         result = {}
         if self.corpus_embeddings and self.index is None:
@@ -202,7 +204,7 @@ class HnswlibSimilarity(BertSimilarity):
             queries = {id: query for id, query in enumerate(queries)}
         result = {qid: {} for qid, query in queries.items()}
         queries_texts = list(queries.values())
-        queries_embeddings = self.get_embeddings(queries_texts)
+        queries_embeddings = self.get_embeddings(queries_texts, **kwargs)
         # We use hnswlib knn_query method to find the top_k_hits
         corpus_ids, distances = self.index.knn_query(queries_embeddings, k=topn)
         # We extract corpus ids and scores for each query

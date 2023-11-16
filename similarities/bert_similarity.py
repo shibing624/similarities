@@ -35,8 +35,8 @@ class BertSimilarity(SimilarityABC):
     def __init__(
             self,
             corpus: Union[List[str], Dict[str, str]] = None,
-            model_name_or_path="shibing624/text2vec-base-chinese",
-            device=None,
+            model_name_or_path: str ="shibing624/text2vec-base-chinese",
+            device: str = None,
     ):
         """
         Initialize the similarity object.
@@ -128,9 +128,7 @@ class BertSimilarity(SimilarityABC):
             device: str = None,
             normalize_embeddings: bool = True,
     ):
-        """
-        Returns the embeddings for a batch of sentences.
-        """
+        """Returns the embeddings for a batch of sentences."""
         return self.sentence_model.encode(
             sentences,
             batch_size=batch_size,

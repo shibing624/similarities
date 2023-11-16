@@ -31,9 +31,10 @@ class ClipSimilarity(SimilarityABC):
     def __init__(
             self,
             corpus: Union[List[Image.Image], Dict[str, Image.Image]] = None,
-            model_name_or_path='OFA-Sys/chinese-clip-vit-base-patch16'
+            model_name_or_path: str ='OFA-Sys/chinese-clip-vit-base-patch16',
+            device: str = None,
     ):
-        self.clip_model = ClipModule(model_name_or_path)  # load the CLIP model
+        self.clip_model = ClipModule(model_name_or_path, device=device)  # load the CLIP model
         self.score_functions = {'cos_sim': cos_sim, 'dot': dot_score}
         self.corpus = {}
         self.corpus_embeddings = []
