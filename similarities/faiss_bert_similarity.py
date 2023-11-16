@@ -248,6 +248,7 @@ def bert_server(
         num_results: int = 10,
         threshold: Optional[float] = None,
         device: Optional[str] = None,
+        host: str = "0.0.0.0",
         port: int = 8001,
         debug: bool = False,
 ):
@@ -260,6 +261,7 @@ def bert_server(
     :param num_results: int, number of results to return
     :param threshold: float, threshold to return results
     :param device: pytorch device, e.g. 'cuda:0'
+    :param host: server host, default '0.0.0.0'
     :param port: server port, default 8001
     :param debug: whether to print debug info, default False
     :return: None, start the server
@@ -335,7 +337,7 @@ def bert_server(
             return {'status': False, 'msg': e}, 400
 
     logger.info("Server starting!")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host=host, port=port)
 
 
 class BertClient:
