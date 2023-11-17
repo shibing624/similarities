@@ -156,6 +156,10 @@ def batch_search_index(
     :return: search results
     """
     result = []
+    queries = [str(q).strip() for q in queries if str(q).strip()]
+    if not queries:
+        return result
+
     # Query embeddings need to be normalized for cosine similarity
     query_features = model.encode(queries, normalize_embeddings=True)
 
@@ -216,6 +220,7 @@ def bert_filter(
     :return: batch search results
     """
     assert isinstance(queries, list), f"queries type error, queries: {queries}"
+
     index_file = os.path.join(index_dir, index_name)
     assert os.path.exists(index_file), f"index file {index_file} not exist"
     faiss_index = faiss.read_index(index_file)

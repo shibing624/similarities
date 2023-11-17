@@ -235,8 +235,9 @@ def batch_search_index(
     :param debug: bool, whether to print debug info, default True
     :return: search results
     """
-    assert queries is not None, "queries should not be None"
     result = []
+    if not queries:
+        return result
     if isinstance(queries, np.ndarray):
         query_features = queries
     else:
