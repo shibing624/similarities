@@ -161,35 +161,24 @@ def batch_search_index(
         return result
 
     # Query embeddings need to be normalized for cosine similarity
-    query_features = model.encode(queries, normalize_embeddings=True)
-
-    for query, query_feature in zip(queries, query_features):
-        query_feature = query_feature.reshape(1, -1)
+    query_features = model.encode(queries, normalize_embeddings=True, convert_to_numpy=True)
+    if query_features.shape[0] > 0:
+        query_features = query_features.astype(np.float32)
         if threshold is not None:
-            _, d, i = faiss_index.range_search(query_feature, threshold)
-            if debug:
-                logger.debug(f"Found {i.shape} items with query '{query}' and threshold {threshold}")
+            _, D, I = faiss_index.range_search(query_features, threshold)
         else:
-            d, i = faiss_index.search(query_feature, num_results)
-            i = i[0]
-            d = d[0]
-            if debug:
-                logger.debug(f"Found {num_results} items with query '{query}'")
-                logger.debug(f"The minimum distance is {min(d):.2f} and the maximum is {max(d):.2f}")
-                logger.debug(
-                    "You may want to increase your result, use --num_results parameter. "
-                    "Or use the --threshold parameter."
-                )
-        # Sorted faiss search result with distance
-        text_scores = []
-        for ed, ei in zip(d, i):
-            sentence = df.iloc[ei].to_json(force_ascii=False)
-            if debug:
-                logger.debug(f"Found: {sentence}, similarity: {ed}, id: {ei}")
-            text_scores.append((sentence, float(ed), int(ei)))
-        # Sort by score desc
-        query_result = sorted(text_scores, key=lambda x: x[1], reverse=True)
-        result.append(query_result)
+            D, I = faiss_index.search(query_features, num_results)
+        for query, d, i in zip(queries, D, I):
+            # Sorted faiss search result with distance
+            text_scores = []
+            for ed, ei in zip(d, i):
+                sentence = df.iloc[ei].to_json(force_ascii=False)
+                if debug:
+                    logger.debug(f"query: {query}, Found: {sentence}, similarity: {ed}, id: {ei}")
+                text_scores.append((sentence, float(ed), int(ei)))
+            # Sort by score desc
+            query_result = sorted(text_scores, key=lambda x: x[1], reverse=True)
+            result.append(query_result)
     return result
 
 
