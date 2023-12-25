@@ -48,7 +48,7 @@ def main():
     sentences = ['老虎', '花朵']
     clip_filter(
         texts=sentences,
-        output_file="tmp_outputs/result_txt.jsonl",
+        output_file="outputs/result_txt.jsonl",
         model_name=model_name,
         index_dir='clip_engine/image_index/',
         index_name="faiss.index",
@@ -62,7 +62,7 @@ def main():
     images = ['data/image1.png', 'data/image3.png']
     clip_filter(
         images=images,
-        output_file="tmp_outputs/result_img.json",
+        output_file="outputs/result_img.json",
         model_name=model_name,
         index_dir='clip_engine/image_index/',
         index_name="faiss.index",
@@ -75,7 +75,7 @@ def main():
     # Filter(search) 向量搜图, support multi query, batch search
     clip_filter(
         embeddings=np.random.randn(1, 512),
-        output_file="tmp_outputs/result_emb.json",
+        output_file="outputs/result_emb.json",
         model_name=model_name,
         index_dir='clip_engine/image_index/',
         index_name="faiss.index",

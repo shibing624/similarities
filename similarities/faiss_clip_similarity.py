@@ -236,11 +236,13 @@ def batch_search_index(
     :return: search results
     """
     result = []
-    if not queries:
-        return result
     if isinstance(queries, np.ndarray):
+        if queries.size == 0:
+            return result
         query_features = queries
     else:
+        if not queries:
+            return result
         query_features = model.encode(queries, normalize_embeddings=True, convert_to_numpy=True)
 
     if query_features.shape[0] > 0:
