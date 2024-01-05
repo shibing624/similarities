@@ -34,7 +34,7 @@ class BertSimilarity(SimilarityABC):
 
     def __init__(
             self,
-            corpus: Union[List[str], Dict[str, str]] = None,
+            corpus: Union[List[str], Dict[int, str]] = None,
             model_name_or_path: str ="shibing624/text2vec-base-chinese",
             device: str = None,
     ):
@@ -86,7 +86,7 @@ class BertSimilarity(SimilarityABC):
         else:
             return getattr(self.sentence_model.bert.pooler.dense, "out_features", None)
 
-    def add_corpus(self, corpus: Union[List[str], Dict[str, str]], batch_size: int = 32,
+    def add_corpus(self, corpus: Union[List[str], Dict[int, str]], batch_size: int = 32,
                    normalize_embeddings: bool = True):
         """
         Extend the corpus with new documents.
@@ -111,6 +111,7 @@ class BertSimilarity(SimilarityABC):
             batch_size=batch_size,
             show_progress_bar=True,
             normalize_embeddings=normalize_embeddings,
+            convert_to_numpy=True,
         ).tolist()
         if self.corpus_embeddings:
             self.corpus_embeddings = self.corpus_embeddings + corpus_embeddings
@@ -161,7 +162,7 @@ class BertSimilarity(SimilarityABC):
         """Compute cosine distance between two texts."""
         return 1 - self.similarity(a, b)
 
-    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10,
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10,
                      score_function: str = "cos_sim", **kwargs):
         """
         Find the topn most similar texts to the queries against the corpus.

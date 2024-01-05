@@ -28,7 +28,7 @@ class ImageHashSimilarity(SimilarityABC):
     perceptual hash (pHash), which acts as an image fingerprint.
     """
 
-    def __init__(self, corpus: Union[List[Image.Image], Dict[str, Image.Image]] = None,
+    def __init__(self, corpus: Union[List[Image.Image], Dict[int, Image.Image]] = None,
                  hash_function: str = "phash", hash_size: int = 16):
         self.hash_functions = {'phash': phash, 'dhash': dhash, 'whash': whash, 'average_hash': average_hash}
         if hash_function not in self.hash_functions:
@@ -50,7 +50,7 @@ class ImageHashSimilarity(SimilarityABC):
             base += f", corpus size: {len(self.corpus)}"
         return base
 
-    def add_corpus(self, corpus: Union[List[Image.Image], Dict[str, Image.Image]]):
+    def add_corpus(self, corpus: Union[List[Image.Image], Dict[int, Image.Image]]):
         """
         Extend the corpus with new documents.
 
@@ -108,12 +108,12 @@ class ImageHashSimilarity(SimilarityABC):
         sim_scores = self.similarity(a, b)
         return [1 - score for score in sim_scores]
 
-    def most_similar(self, queries: Union[Image.Image, List[Image.Image], Dict[str, Image.Image]], topn: int = 10):
+    def most_similar(self, queries: Union[Image.Image, List[Image.Image], Dict[int, Image.Image]], topn: int = 10):
         """
         Find the topn most similar images to the query against the corpus.
         :param queries: str of list of str, image file paths
         :param topn: int
-        :return: list of list tuples (id, image_path, similarity)
+        :return: dict of dicts, {query_id: {corpus_id, score}, ...}
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
@@ -143,7 +143,7 @@ class SiftSimilarity(SimilarityABC):
     https://blog.csdn.net/zddblog/article/details/7521424
     """
 
-    def __init__(self, corpus: Union[List[Image.Image], Dict[str, Image.Image]] = None, nfeatures: int = 500):
+    def __init__(self, corpus: Union[List[Image.Image], Dict[int, Image.Image]] = None, nfeatures: int = 500):
         try:
             import cv2
         except ImportError:
@@ -165,7 +165,7 @@ class SiftSimilarity(SimilarityABC):
             base += f", corpus size: {len(self.corpus)}"
         return base
 
-    def add_corpus(self, corpus: Union[List[Image.Image], Dict[str, Image.Image]]):
+    def add_corpus(self, corpus: Union[List[Image.Image], Dict[int, Image.Image]]):
         """
         Extend the corpus with new documents.
 
@@ -273,12 +273,12 @@ class SiftSimilarity(SimilarityABC):
         sim_scores = self.similarity(a, b)
         return [1 - score for score in sim_scores]
 
-    def most_similar(self, queries: Union[Image.Image, List[Image.Image], Dict[str, Image.Image]], topn: int = 10):
+    def most_similar(self, queries: Union[Image.Image, List[Image.Image], Dict[int, Image.Image]], topn: int = 10):
         """
         Find the topn most similar images to the query against the corpus.
         :param queries: PIL images
         :param topn: int
-        :return: list of list tuples (id, image_path, similarity)
+        :return: dict of dicts, {query_id: {corpus_id, score}, ...}
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]

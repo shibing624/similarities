@@ -20,6 +20,7 @@ from similarities.literal_similarity import (
     SameCharsSimilarity,
     SequenceMatcherSimilarity,
 )
+from similarities.ensemble_similarity import EnsembleSimilarity
 from similarities.image_similarity import (
     ImageHashSimilarity,
     SiftSimilarity,
