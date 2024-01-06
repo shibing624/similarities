@@ -320,7 +320,7 @@ class BM25Similarity(SimilarityABC):
 
         Parameters
         ----------
-        corpus : list of str or dict
+        corpus : dict
         """
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
@@ -336,7 +336,7 @@ class BM25Similarity(SimilarityABC):
         self.corpus.update(corpus_new)
 
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
-        corpus_texts = list(corpus_new.values())
+        corpus_texts = list(self.corpus.values())
         corpus_seg = [jieba.lcut(d) for d in corpus_texts]
         corpus_seg = [[w for w in doc if (w.strip().lower() not in self.default_stopwords) and
                        len(w.strip()) > 0] for doc in corpus_seg]
