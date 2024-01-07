@@ -537,7 +537,7 @@ class WordEmbeddingSimilarity(SimilarityABC):
         """
         Save corpus embeddings to jsonl file.
         :param emb_path: jsonl file path
-        :return:
+        :return: None, save corpus embeddings to file
         """
         with open(emb_path, "w", encoding="utf-8") as f:
             for id, emb in zip(self.corpus.keys(), self.corpus_embeddings):
