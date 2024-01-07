@@ -8,6 +8,7 @@ This module provides classes that deal with sentence similarities from mean term
 Adjust the gensim similarities Index to compute sentence similarities.
 """
 
+import json
 import os
 from typing import List, Union, Dict
 
@@ -16,7 +17,6 @@ import jieba.analyse
 import jieba.posseg
 import numpy as np
 from loguru import logger
-
 from tqdm import tqdm
 
 from similarities.similarity import SimilarityABC
@@ -188,6 +188,35 @@ class SimHashSimilarity(SimilarityABC):
 
         return result
 
+    def save_corpus_embeddings(self, emb_path: str = "hash_corpus_emb.jsonl"):
+        """
+        Save corpus embeddings to jsonl file.
+        :param emb_path: jsonl file path
+        :return:
+        """
+        with open(emb_path, "w", encoding="utf-8") as f:
+            for id, emb in zip(self.corpus.keys(), self.corpus_embeddings):
+                json_obj = {"id": id, "doc": self.corpus[id], "doc_emb": list(emb)}
+                f.write(json.dumps(json_obj, ensure_ascii=False) + "\n")
+        logger.debug(f"Save corpus embeddings to file: {emb_path}.")
+
+    def load_corpus_embeddings(self, emb_path: str = "hash_corpus_emb.jsonl"):
+        """
+        Load corpus embeddings from jsonl file.
+        :param emb_path: jsonl file path
+        :return:
+        """
+        try:
+            with open(emb_path, "r", encoding="utf-8") as f:
+                corpus_embeddings = []
+                for line in f:
+                    json_obj = json.loads(line)
+                    self.corpus[int(json_obj["id"])] = json_obj["doc"]
+                    corpus_embeddings.append(json_obj["doc_emb"])
+                self.corpus_embeddings = corpus_embeddings
+        except (IOError, json.JSONDecodeError):
+            logger.error("Error: Could not load corpus embeddings from file.")
+
 
 class TfidfSimilarity(SimilarityABC):
     """
@@ -287,6 +316,35 @@ class TfidfSimilarity(SimilarityABC):
                 result[queries_ids_map[idx]][hit['corpus_id']] = hit['score']
 
         return result
+
+    def save_corpus_embeddings(self, emb_path: str = "tfidf_corpus_emb.jsonl"):
+        """
+        Save corpus embeddings to jsonl file.
+        :param emb_path: jsonl file path
+        :return:
+        """
+        with open(emb_path, "w", encoding="utf-8") as f:
+            for id, emb in zip(self.corpus.keys(), self.corpus_embeddings):
+                json_obj = {"id": id, "doc": self.corpus[id], "doc_emb": list(emb)}
+                f.write(json.dumps(json_obj, ensure_ascii=False) + "\n")
+        logger.debug(f"Save corpus embeddings to file: {emb_path}.")
+
+    def load_corpus_embeddings(self, emb_path: str = "tfidf_corpus_emb.jsonl"):
+        """
+        Load corpus embeddings from jsonl file.
+        :param emb_path: jsonl file path
+        :return:
+        """
+        try:
+            with open(emb_path, "r", encoding="utf-8") as f:
+                corpus_embeddings = []
+                for line in f:
+                    json_obj = json.loads(line)
+                    self.corpus[int(json_obj["id"])] = json_obj["doc"]
+                    corpus_embeddings.append(json_obj["doc_emb"])
+                self.corpus_embeddings = corpus_embeddings
+        except (IOError, json.JSONDecodeError):
+            logger.error("Error: Could not load corpus embeddings from file.")
 
 
 class BM25Similarity(SimilarityABC):
@@ -474,6 +532,35 @@ class WordEmbeddingSimilarity(SimilarityABC):
                 result[queries_ids_map[idx]][hit['corpus_id']] = hit['score']
 
         return result
+
+    def save_corpus_embeddings(self, emb_path: str = "word2vec_corpus_emb.jsonl"):
+        """
+        Save corpus embeddings to jsonl file.
+        :param emb_path: jsonl file path
+        :return:
+        """
+        with open(emb_path, "w", encoding="utf-8") as f:
+            for id, emb in zip(self.corpus.keys(), self.corpus_embeddings):
+                json_obj = {"id": id, "doc": self.corpus[id], "doc_emb": list(emb)}
+                f.write(json.dumps(json_obj, ensure_ascii=False) + "\n")
+        logger.debug(f"Save corpus embeddings to file: {emb_path}.")
+
+    def load_corpus_embeddings(self, emb_path: str = "word2vec_corpus_emb.jsonl"):
+        """
+        Load corpus embeddings from jsonl file.
+        :param emb_path: jsonl file path
+        :return:
+        """
+        try:
+            with open(emb_path, "r", encoding="utf-8") as f:
+                corpus_embeddings = []
+                for line in f:
+                    json_obj = json.loads(line)
+                    self.corpus[int(json_obj["id"])] = json_obj["doc"]
+                    corpus_embeddings.append(json_obj["doc_emb"])
+                self.corpus_embeddings = corpus_embeddings
+        except (IOError, json.JSONDecodeError):
+            logger.error("Error: Could not load corpus embeddings from file.")
 
 
 class CilinSimilarity(SimilarityABC):

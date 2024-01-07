@@ -53,12 +53,12 @@ corpus = [
 ]
 
 model.add_corpus(corpus)
-model.save_corpus_embeddings('en_corpus_emb.json')
+model.save_corpus_embeddings('en_corpus_emb.jsonl')
 res = model.most_similar(queries=sentences1, topn=3)
 print(res)
 del model
 model = BertSimilarity(model_name_or_path="shibing624/text2vec-base-multilingual")
-model.load_corpus_embeddings('en_corpus_emb.json')
+model.load_corpus_embeddings('en_corpus_emb.jsonl')
 res = model.most_similar(queries=sentences1, topn=3)
 print(res)
 for q_id, c in res.items():

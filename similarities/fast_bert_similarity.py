@@ -63,7 +63,7 @@ class AnnoySimilarity(BertSimilarity):
             if self.index is None:
                 self.build_index()
             self.index.save(index_path)
-            corpus_emb_json_path = index_path + ".json"
+            corpus_emb_json_path = index_path + ".jsonl"
             super().save_corpus_embeddings(corpus_emb_json_path)
             logger.info(f"Saving Annoy index to: {index_path}, corpus embedding to: {corpus_emb_json_path}")
         else:
@@ -72,7 +72,7 @@ class AnnoySimilarity(BertSimilarity):
     def load_index(self, index_path: str = "annoy_index.bin"):
         """Load Annoy Index from disc."""
         if index_path and os.path.exists(index_path):
-            corpus_emb_json_path = index_path + ".json"
+            corpus_emb_json_path = index_path + ".jsonl"
             logger.info(f"Loading index from: {index_path}, corpus embedding from: {corpus_emb_json_path}")
             super().load_corpus_embeddings(corpus_emb_json_path)
             if self.index is None:
@@ -169,7 +169,7 @@ class HnswlibSimilarity(BertSimilarity):
             if self.index is None:
                 self.build_index()
             self.index.save_index(index_path)
-            corpus_emb_json_path = index_path + ".json"
+            corpus_emb_json_path = index_path + ".jsonl"
             super().save_corpus_embeddings(corpus_emb_json_path)
             logger.info(f"Saving hnswlib index to: {index_path}, corpus embedding to: {corpus_emb_json_path}")
         else:
@@ -178,7 +178,7 @@ class HnswlibSimilarity(BertSimilarity):
     def load_index(self, index_path: str = "hnswlib_index.bin"):
         """Load Index from disc."""
         if index_path and os.path.exists(index_path):
-            corpus_emb_json_path = index_path + ".json"
+            corpus_emb_json_path = index_path + ".jsonl"
             logger.info(f"Loading index from: {index_path}, corpus embedding from: {corpus_emb_json_path}")
             super().load_corpus_embeddings(corpus_emb_json_path)
             if self.index is None:

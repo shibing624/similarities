@@ -8,7 +8,7 @@ Adjust the code to compare similarity score and search.
 """
 
 from typing import List, Union, Dict
-
+import json
 import numpy as np
 from PIL import Image
 from loguru import logger
@@ -172,3 +172,32 @@ class ClipSimilarity(SimilarityABC):
                 result[queries_ids_map[idx]][hit['corpus_id']] = hit['score']
 
         return result
+
+    def save_corpus_embeddings(self, emb_path: str = "clip_corpus_emb.jsonl"):
+        """
+        Save corpus embeddings to jsonl file.
+        :param emb_path: jsonl file path
+        :return:
+        """
+        with open(emb_path, "w", encoding="utf-8") as f:
+            for id, emb in zip(self.corpus.keys(), self.corpus_embeddings):
+                json_obj = {"id": id, "doc": self.corpus[id], "doc_emb": list(emb)}
+                f.write(json.dumps(json_obj, ensure_ascii=False) + "\n")
+        logger.debug(f"Save corpus embeddings to file: {emb_path}.")
+
+    def load_corpus_embeddings(self, emb_path: str = "clip_corpus_emb.jsonl"):
+        """
+        Load corpus embeddings from jsonl file.
+        :param emb_path: jsonl file path
+        :return:
+        """
+        try:
+            with open(emb_path, "r", encoding="utf-8") as f:
+                corpus_embeddings = []
+                for line in f:
+                    json_obj = json.loads(line)
+                    self.corpus[int(json_obj["id"])] = json_obj["doc"]
+                    corpus_embeddings.append(json_obj["doc_emb"])
+                self.corpus_embeddings = corpus_embeddings
+        except (IOError, json.JSONDecodeError):
+            logger.error("Error: Could not load corpus embeddings from file.")

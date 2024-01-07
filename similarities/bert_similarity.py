@@ -35,7 +35,7 @@ class BertSimilarity(SimilarityABC):
     def __init__(
             self,
             corpus: Union[List[str], Dict[int, str]] = None,
-            model_name_or_path: str ="shibing624/text2vec-base-chinese",
+            model_name_or_path: str = "shibing624/text2vec-base-chinese",
             device: str = None,
     ):
         """
@@ -193,31 +193,31 @@ class BertSimilarity(SimilarityABC):
 
         return result
 
-    def save_corpus_embeddings(self, emb_path: str = "corpus_emb.json"):
+    def save_corpus_embeddings(self, emb_path: str = "bert_corpus_emb.jsonl"):
         """
-        Save corpus embeddings to json file.
-        :param emb_path: json file path
+        Save corpus embeddings to jsonl file.
+        :param emb_path: jsonl file path
         :return:
         """
-        corpus_emb = {id: {"doc": self.corpus[id], "doc_emb": emb} for id, emb in
-                      zip(self.corpus.keys(), self.corpus_embeddings)}
         with open(emb_path, "w", encoding="utf-8") as f:
-            json.dump(corpus_emb, f, ensure_ascii=False)
+            for id, emb in zip(self.corpus.keys(), self.corpus_embeddings):
+                json_obj = {"id": id, "doc": self.corpus[id], "doc_emb": list(emb)}
+                f.write(json.dumps(json_obj, ensure_ascii=False) + "\n")
         logger.debug(f"Save corpus embeddings to file: {emb_path}.")
 
-    def load_corpus_embeddings(self, emb_path: str = "corpus_emb.json"):
+    def load_corpus_embeddings(self, emb_path: str = "bert_corpus_emb.jsonl"):
         """
-        Load corpus embeddings from json file.
-        :param emb_path: json file path
-        :return: list of corpus embeddings, dict of corpus ids map, dict of corpus
+        Load corpus embeddings from jsonl file.
+        :param emb_path: jsonl file path
+        :return:
         """
         try:
             with open(emb_path, "r", encoding="utf-8") as f:
-                corpus_emb = json.load(f)
-            corpus_embeddings = []
-            for id, corpus_dict in corpus_emb.items():
-                self.corpus[int(id)] = corpus_dict["doc"]
-                corpus_embeddings.append(corpus_dict["doc_emb"])
-            self.corpus_embeddings = corpus_embeddings
+                corpus_embeddings = []
+                for line in f:
+                    json_obj = json.loads(line)
+                    self.corpus[int(json_obj["id"])] = json_obj["doc"]
+                    corpus_embeddings.append(json_obj["doc_emb"])
+                self.corpus_embeddings = corpus_embeddings
         except (IOError, json.JSONDecodeError):
             logger.error("Error: Could not load corpus embeddings from file.")
