@@ -64,7 +64,7 @@ class AnnoySimilarity(BertSimilarity):
                 self.build_index()
             self.index.save(index_path)
             corpus_emb_json_path = index_path + ".json"
-            super().save_embeddings(corpus_emb_json_path)
+            super().save_corpus_embeddings(corpus_emb_json_path)
             logger.info(f"Saving Annoy index to: {index_path}, corpus embedding to: {corpus_emb_json_path}")
         else:
             logger.warning("No index path given. Index not saved.")
@@ -74,7 +74,7 @@ class AnnoySimilarity(BertSimilarity):
         if index_path and os.path.exists(index_path):
             corpus_emb_json_path = index_path + ".json"
             logger.info(f"Loading index from: {index_path}, corpus embedding from: {corpus_emb_json_path}")
-            super().load_embeddings(corpus_emb_json_path)
+            super().load_corpus_embeddings(corpus_emb_json_path)
             if self.index is None:
                 self.create_index()
             self.index.load(index_path)
@@ -170,17 +170,17 @@ class HnswlibSimilarity(BertSimilarity):
                 self.build_index()
             self.index.save_index(index_path)
             corpus_emb_json_path = index_path + ".json"
-            super().save_embeddings(corpus_emb_json_path)
+            super().save_corpus_embeddings(corpus_emb_json_path)
             logger.info(f"Saving hnswlib index to: {index_path}, corpus embedding to: {corpus_emb_json_path}")
         else:
-            logger.warning("No index path given. Index not saved.")
+            logger.error("No index path given. Index not saved.")
 
     def load_index(self, index_path: str = "hnswlib_index.bin"):
         """Load Index from disc."""
         if index_path and os.path.exists(index_path):
             corpus_emb_json_path = index_path + ".json"
             logger.info(f"Loading index from: {index_path}, corpus embedding from: {corpus_emb_json_path}")
-            super().load_embeddings(corpus_emb_json_path)
+            super().load_corpus_embeddings(corpus_emb_json_path)
             if self.index is None:
                 self.create_index()
             self.index.load_index(index_path)

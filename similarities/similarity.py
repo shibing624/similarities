@@ -44,19 +44,19 @@ class SimilarityABC:
         """Compute cosine distance between two texts."""
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
-    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
         """
         Find the topn most similar texts to the query against the corpus.
-        :param queries: Dict[str(query_id), str(query_text)] or List[str] or str
+        :param queries: Dict[int(query_id), str(query_text)] or List[str] or str
         :param topn: int
         :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
         """
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
-    def search(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10):
+    def search(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
         """
         Find the topn most similar texts to the query against the corpus.
-        :param queries: Dict[str(query_id), str(query_text)] or List[str] or str
+        :param queries: Dict[int(query_id), str(query_text)] or List[str] or str
         :param topn: int
         :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
         """

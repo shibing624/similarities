@@ -193,7 +193,7 @@ class BertSimilarity(SimilarityABC):
 
         return result
 
-    def save_embeddings(self, emb_path: str = "corpus_emb.json"):
+    def save_corpus_embeddings(self, emb_path: str = "corpus_emb.json"):
         """
         Save corpus embeddings to json file.
         :param emb_path: json file path
@@ -205,7 +205,7 @@ class BertSimilarity(SimilarityABC):
             json.dump(corpus_emb, f, ensure_ascii=False)
         logger.debug(f"Save corpus embeddings to file: {emb_path}.")
 
-    def load_embeddings(self, emb_path: str = "corpus_emb.json"):
+    def load_corpus_embeddings(self, emb_path: str = "corpus_emb.json"):
         """
         Load corpus embeddings from json file.
         :param emb_path: json file path
