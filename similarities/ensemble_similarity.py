@@ -158,3 +158,26 @@ class EnsembleSimilarity(SimilarityABC):
             sorted_by_score = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)[:topn]
             result[qid] = {doc_id: score for doc_id, score in sorted_by_score}
         return result
+
+    def save_corpus_embeddings(self, emb_dir: str = "corpus_embs"):
+        """
+        Save corpus embeddings to jsonl file.
+        :param emb_dir: jsonl file dir
+        :return:
+        """
+        os.makedirs(emb_dir, exist_ok=True)
+        for i in self.similarities:
+            if hasattr(i, "save_corpus_embeddings"):
+                save_path = os.path.join(emb_dir, f"{i.__class__.__name__}_corpus_emb.jsonl")
+                i.save_corpus_embeddings(save_path)
+
+    def load_corpus_embeddings(self, emb_dir: str = "corpus_embs"):
+        """
+        Load corpus embeddings from jsonl file.
+        :param emb_dir: jsonl file dir
+        :return:
+        """
+        for i in self.similarities:
+            if hasattr(i, "load_corpus_embeddings"):
+                load_path = os.path.join(emb_dir, f"{i.__class__.__name__}_corpus_emb.jsonl")
+                i.load_corpus_embeddings(load_path)
