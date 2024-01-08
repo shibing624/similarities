@@ -392,14 +392,17 @@ class BM25Similarity(SimilarityABC):
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
         self.corpus.update(corpus_new)
+        logger.info(f"Add corpus done, new docs: {len(corpus_new)}, all corpus size: {len(self.corpus)}")
+        self.build_bm25()
 
-        logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
+    def build_bm25(self):
+        """build bm25 model."""
         corpus_texts = list(self.corpus.values())
         corpus_seg = [jieba.lcut(d) for d in corpus_texts]
         corpus_seg = [[w for w in doc if (w.strip().lower() not in self.default_stopwords) and
                        len(w.strip()) > 0] for doc in corpus_seg]
         self.bm25 = BM25Okapi(corpus_seg)
-        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
+        logger.info(f"Total corpus: {len(self.corpus)}")
 
     def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn=10):
         """
@@ -408,8 +411,10 @@ class BM25Similarity(SimilarityABC):
         :param topn: int
         :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
         """
+        if not self.corpus:
+            raise ValueError("corpus is None. Please add_corpus first, eg. `add_corpus(corpus)`")
         if not self.bm25:
-            raise ValueError("BM25 model is not initialized. Please add_corpus first, eg. `add_corpus(corpus)`")
+            self.build_bm25()
         if isinstance(queries, str):
             queries = [queries]
         if isinstance(queries, list):

@@ -177,10 +177,14 @@ class EnsembleSimilarity(SimilarityABC):
         :param emb_dir: jsonl file dir
         :return:
         """
+        corpus = None
         for i in self.similarities:
             if hasattr(i, "load_corpus_embeddings"):
                 load_path = os.path.join(emb_dir, f"{i.__class__.__name__}_corpus_emb.jsonl")
                 i.load_corpus_embeddings(load_path)
+                corpus = i.corpus
                 if not self.corpus:
-                    self.corpus = i.corpus
-
+                    self.corpus = corpus
+        for i in self.similarities:
+            if not hasattr(i, "load_corpus_embeddings") and corpus:
+                i.corpus = corpus
