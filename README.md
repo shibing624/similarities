@@ -2,7 +2,7 @@
 
 <div align="center">
   <a href="https://github.com/shibing624/similarities">
-    <img src="https://github.com/shibing624/similarities/blob/main/docs/logo.png" height="150" alt="Logo">
+    <img src="https://raw.githubusercontent.com/shibing624/similarities/main/docs/logo.png" height="150" alt="Logo">
   </a>
 </div>
 
