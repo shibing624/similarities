@@ -72,3 +72,8 @@ if __name__ == '__main__':
     sim_and_search(m3)
     sim_and_search(m4)
     sim_and_search(m)
+    m.save_corpus_embeddings()
+    del m
+    m = EnsembleSimilarity(similarities=[m1, m2, m3, m4], weights=[0.7, 0.1, 0.1, 0.1], c=2)
+    m.load_corpus_embeddings()
+    sim_and_search(m)
