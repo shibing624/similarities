@@ -181,3 +181,6 @@ class EnsembleSimilarity(SimilarityABC):
             if hasattr(i, "load_corpus_embeddings"):
                 load_path = os.path.join(emb_dir, f"{i.__class__.__name__}_corpus_emb.jsonl")
                 i.load_corpus_embeddings(load_path)
+                if not self.corpus:
+                    self.corpus = i.corpus
+
