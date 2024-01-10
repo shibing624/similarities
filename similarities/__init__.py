@@ -6,6 +6,7 @@
 
 # bring classes directly into package namespace, to save some typing
 from similarities.version import __version__
+from similarities.similarity import SimilarityABC
 from similarities.bert_similarity import BertSimilarity
 from similarities.bert_similarity import BertSimilarity as Similarity
 
