@@ -40,7 +40,7 @@ class BertSimilarity(SimilarityABC):
     ):
         """
         Initialize the similarity object.
-        :param model_name_or_path: Transformer model name or path, like:
+        :param model_name_or_path: Transformer model name or path or SentenceTransformer() or SentenceModel(), like:
             'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2', 'bert-base-uncased', 'bert-base-chinese',
              'shibing624/text2vec-base-chinese', ...
             model in HuggingFace Model Hub and release from https://github.com/shibing624/text2vec
