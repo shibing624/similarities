@@ -26,23 +26,32 @@ from similarities.utils.util import cos_sim
 
 def preprocess_image(image_input: Union[str, np.ndarray, bytes]) -> Image.Image:
     """
-    Process image input to Image.Image object
+    Process image input to Image.Image object, supporting all formats that PIL can handle.
     """
-    if isinstance(image_input, str):
-        if image_input.startswith('http'):
-            return Image.open(requests.get(image_input, stream=True).raw)
-        elif image_input.endswith((".png", ".jpg", ".jpeg", ".bmp")) and os.path.isfile(image_input):
-            return Image.open(image_input)
+    try:
+        if isinstance(image_input, str):
+            # Try to open image from http or local file path
+            if image_input.startswith('http'):
+                response = requests.get(image_input, stream=True)
+                response.raise_for_status()  # Raises HTTPError if the HTTP request returned an unsuccessful status code
+                return Image.open(response.raw)
+            elif os.path.isfile(image_input):
+                return Image.open(image_input)
+            else:
+                raise ValueError(f"Image path does not exist or is not a file: {image_input}")
+        elif isinstance(image_input, np.ndarray):
+            # Convert numpy array to image
+            return Image.fromarray(image_input)
+        elif isinstance(image_input, bytes):
+            # Open image from byte data
+            img_data = BytesIO(base64.b64decode(image_input))
+            return Image.open(img_data)
         else:
-            raise ValueError(f"Unsupported image input type, image path: {image_input}")
-    elif isinstance(image_input, np.ndarray):
-        return Image.fromarray(image_input)
-    elif isinstance(image_input, bytes):
-        img_data = base64.b64decode(image_input)
-        return Image.open(BytesIO(img_data))
-    else:
-        raise ValueError(f"Unsupported image input type, image input: {image_input}")
-
+            raise ValueError(f"Unsupported image input type, image input: {image_input}")
+    except Exception as e:
+        # Catch any exception that PIL might raise and re-raise it to the caller
+        raise ValueError(f"An error occurred while processing the image input: {e}")
+        
 
 def clip_embedding(
         input_dir: str,
