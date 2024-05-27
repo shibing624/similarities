@@ -62,7 +62,6 @@ class SimHashSimilarity(SimilarityABC):
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         if isinstance(corpus, list):
-            corpus = list(set(corpus))
             for id, doc in enumerate(corpus):
                 if doc not in list(self.corpus.values()):
                     corpus_new[start_id + id] = doc
@@ -254,7 +253,6 @@ class TfidfSimilarity(SimilarityABC):
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         if isinstance(corpus, list):
-            corpus = list(set(corpus))
             for id, doc in enumerate(corpus):
                 if doc not in list(self.corpus.values()):
                     corpus_new[start_id + id] = doc
@@ -383,7 +381,6 @@ class BM25Similarity(SimilarityABC):
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         if isinstance(corpus, list):
-            corpus = list(set(corpus))
             for id, doc in enumerate(corpus):
                 if doc not in list(self.corpus.values()):
                     corpus_new[start_id + id] = doc
@@ -482,7 +479,6 @@ class WordEmbeddingSimilarity(SimilarityABC):
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         if isinstance(corpus, list):
-            corpus = list(set(corpus))
             for id, doc in enumerate(corpus):
                 if doc not in list(self.corpus.values()):
                     corpus_new[start_id + id] = doc
@@ -604,7 +600,6 @@ class CilinSimilarity(SimilarityABC):
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         if isinstance(corpus, list):
-            corpus = list(set(corpus))
             for id, doc in enumerate(corpus):
                 if doc not in list(self.corpus.values()):
                     corpus_new[start_id + id] = doc
@@ -761,7 +756,6 @@ class HownetSimilarity(SimilarityABC):
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         if isinstance(corpus, list):
-            corpus = list(set(corpus))
             for id, doc in enumerate(corpus):
                 if doc not in list(self.corpus.values()):
                     corpus_new[start_id + id] = doc
@@ -891,7 +885,6 @@ class SameCharsSimilarity(SimilarityABC):
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         if isinstance(corpus, list):
-            corpus = list(set(corpus))
             for id, doc in enumerate(corpus):
                 if doc not in list(self.corpus.values()):
                     corpus_new[start_id + id] = doc
@@ -987,7 +980,6 @@ class SequenceMatcherSimilarity(SimilarityABC):
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         if isinstance(corpus, list):
-            corpus = list(set(corpus))
             for id, doc in enumerate(corpus):
                 if doc not in list(self.corpus.values()):
                     corpus_new[start_id + id] = doc
