@@ -292,7 +292,7 @@ class SiftSimilarity(SimilarityABC):
             for (corpus_id, doc), doc_desc in zip(enumerate(self.corpus), self.corpus_embeddings):
                 score = self._sim_score(q_desc, doc_desc)
                 q_res.append((corpus_id, score))
-            q_res.sort(key=lambda x: x[1], reverse=True)
+            q_res.sort(key=lambda x: x[1], reverse=False)
             q_res = q_res[:topn]
             for corpus_id, score in q_res:
                 result[qid][corpus_id] = score
