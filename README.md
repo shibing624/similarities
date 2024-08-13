@@ -129,6 +129,7 @@ example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/
 
 ![image_sim](https://github.com/shibing624/similarities/blob/main/docs/image_sim.png)
 
+
 #### Faiss高效向量检索，适合亿级数据集
 
 - 图像转向量，建索引，批量检索，启动服务：[examples/faiss_clip_search_server_demo.py](https://github.com/shibing624/similarities/blob/main/examples/faiss_clip_search_server_demo.py)
@@ -139,8 +140,19 @@ example: [examples/image_semantic_search_demo.py](https://github.com/shibing624/
 
 <img src="https://github.com/shibing624/similarities/blob/main/docs/dog-img.png"/>
 
+### 5. 聚类
+
+通过社群发现（community_detection）算法可以在大规模数据集上执行聚类，寻找聚类簇（即相似的句子组）。
+
+example: [examples/text_clustering_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_clustering_demo.py)
 
 
+### 6. 图文语义去重
+
+通过同义句挖掘（paraphrase_mining_embeddings）算法可以从大量句子或文档集中挖掘出具有相似意义的句子对，可用于冗余图文检测，语义去重。
+
+- 文本语义去重：[examples/text_duplicates_demo.py](https://github.com/shibing624/similarities/blob/main/examples/text_duplicates_demo.py)
+- 图片语义去重：[examples/image_duplicates_demo.py](https://github.com/shibing624/similarities/blob/main/examples/image_duplicates_demo.py)
 
 ### 命令行模式（CLI）
 
