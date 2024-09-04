@@ -186,6 +186,8 @@ class SiftSimilarity(SimilarityABC):
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
+        if not corpus_new:
+            return
         self.corpus.update(corpus_new)
         logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_embeddings = []
@@ -297,7 +299,8 @@ class SiftSimilarity(SimilarityABC):
         for qid, query in queries.items():
             q_res = []
             _, q_desc = self.calculate_descr(query)
-            for (corpus_id, doc), doc_desc in zip(enumerate(self.corpus), self.corpus_embeddings):
+            for corpus_id, doc_desc in enumerate(self.corpus_embeddings):
+                doc = self.corpus.get(corpus_id)
                 score = self._sim_score(q_desc, doc_desc)
                 q_res.append({'corpus_id': corpus_id, 'corpus_doc': doc, 'score': score})
             q_res = sorted(q_res, key=lambda x: x['score'], reverse=True)[:topn]

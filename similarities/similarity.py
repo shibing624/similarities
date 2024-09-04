@@ -9,6 +9,7 @@ Compute similarity:
 """
 
 from typing import List, Union, Dict
+from PIL import Image
 
 
 class SimilarityABC:
@@ -20,17 +21,14 @@ class SimilarityABC:
     to individual corpus documents.
     """
 
-    def add_corpus(self, corpus: Union[List[str], Dict[str, str]]):
+    def add_corpus(self, corpus: Union[List, Dict]):
         """
         Extend the corpus with new documents.
-
-        Parameters
-        ----------
         corpus : list of str
         """
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
-    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
+    def similarity(self, a: Union[str, Image.Image, List], b: Union[str, Image.Image, List]):
         """
         Compute similarity between two texts.
         :param a: list of str or str
@@ -40,24 +38,26 @@ class SimilarityABC:
         """
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
-    def distance(self, a: Union[str, List[str]], b: Union[str, List[str]]):
+    def distance(self, a: Union[str, Image.Image, List], b: Union[str, Image.Image, List]):
         """Compute cosine distance between two texts."""
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, Image.Image, List, Dict], topn: int = 10) -> List[List[Dict]]:
         """
         Find the topn most similar texts to the query against the corpus.
         :param queries: Dict[int(query_id), str(query_text)] or List[str] or str
         :param topn: int
-        :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing similarity scores.
         """
         raise NotImplementedError("cannot instantiate Abstract Base Class")
 
-    def search(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
+    def search(self, queries: Union[str, Image.Image, List, Dict], topn: int = 10) -> List[List[Dict]]:
         """
         Find the topn most similar texts to the query against the corpus.
         :param queries: Dict[int(query_id), str(query_text)] or List[str] or str
         :param topn: int
-        :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing similarity scores.
         """
         return self.most_similar(queries, topn=topn)

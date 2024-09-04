@@ -34,28 +34,20 @@ class ImageSimCase(unittest.TestCase):
         self.assertTrue(not r[0])
         m.add_corpus(corpus_imgs)
 
-        r = m.most_similar(img1)
+        r = m.most_similar([img1])
         print(r)
         self.assertTrue(len(r) > 0)
-
-    def test_clip_dict(self):
-        m = ClipSimilarity()
-        print(m)
-        corpus_dict = {i.filename: i for i in corpus_imgs}
-        queries = {i.filename: i for i in corpus_imgs[:3]}
-        m.add_corpus(corpus_dict)
-        r = m.most_similar(queries)
+        r = m.most_similar(corpus_imgs[:3])
         print(r)
         self.assertTrue(len(r) > 0)
 
     def test_sift(self):
-        m = SiftSimilarity(corpus=glob.glob(f'{image_dir}/*.jpg'))
+        m = SiftSimilarity()
         print(m)
         print(m.similarity(img1, img2))
         r = m.most_similar(img1)
         print(r)
         self.assertTrue(not r[0])
-        m.add_corpus(corpus_imgs)
         m.add_corpus(corpus_imgs)
         r = m.most_similar(img1)
         print(r)
