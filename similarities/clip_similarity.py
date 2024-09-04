@@ -31,7 +31,7 @@ class ClipSimilarity(SimilarityABC):
     def __init__(
             self,
             corpus: Union[List[Image.Image], Dict[str, Image.Image]] = None,
-            model_name_or_path: str ='OFA-Sys/chinese-clip-vit-base-patch16',
+            model_name_or_path: str = 'OFA-Sys/chinese-clip-vit-base-patch16',
             device: str = None,
     ):
         self.clip_model = ClipModule(model_name_or_path, device=device)  # load the CLIP model
@@ -149,28 +149,33 @@ class ClipSimilarity(SimilarityABC):
         """Compute cosine distance between two texts."""
         return 1 - self.similarity(a, b)
 
-    def most_similar(self, queries, topn: int = 10, **kwargs):
+    def most_similar(self, queries, topn: int = 10, **kwargs) -> List[List[Dict]]:
         """
         Find the topn most similar texts to the queries against the corpus.
         :param queries: text or image
         :param topn: int
         :param kwargs: other params
-        :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing similarity scores.
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
-        queries_ids_map = {i: id for i, id in enumerate(list(queries.keys()))}
+        result = []
         queries_texts = list(queries.values())
         queries_embeddings = self.get_embeddings(queries_texts, **kwargs)
         corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
         all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn)
         for idx, hits in enumerate(all_hits):
+            q_res = []
             for hit in hits[0:topn]:
-                result[queries_ids_map[idx]][hit['corpus_id']] = hit['score']
-
+                q_res.append({
+                    "corpus_id": hit['corpus_id'],
+                    "corpus_doc": self.corpus.get(hit['corpus_id']),
+                    "score": hit['score']
+                })
+            result.append(q_res)
         return result
 
     def save_corpus_embeddings(self, emb_path: str = "clip_corpus_emb.jsonl"):

@@ -7,7 +7,7 @@ import sys
 import unittest
 
 sys.path.append('..')
-from similarities.similarity import Similarity
+from similarities import Similarity
 
 m = Similarity()
 

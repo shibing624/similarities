@@ -37,11 +37,10 @@ print('-' * 50 + '\n')
 model.add_corpus(corpus)
 res = model.most_similar(queries=sentences, topn=3)
 print(res)
-for q_id, id_score_dict in res.items():
+for q_id, c in enumerate(res):
     print('query:', sentences[q_id])
     print("search top 3:")
-    for corpus_id, s in id_score_dict.items():
-        print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
+    print(f'\t{c}')
 
 print('-' * 50 + '\n')
 print(model.search(sentences[0], topn=3))

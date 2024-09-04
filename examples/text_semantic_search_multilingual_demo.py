@@ -61,8 +61,7 @@ model = BertSimilarity(model_name_or_path="shibing624/text2vec-base-multilingual
 model.load_corpus_embeddings('en_corpus_emb.jsonl')
 res = model.most_similar(queries=sentences1, topn=3)
 print(res)
-for q_id, c in res.items():
+for q_id, c in enumerate(res):
     print('query:', sentences1[q_id])
     print("search top 3:")
-    for corpus_id, s in c.items():
-        print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
+    print(f'\t{c}')

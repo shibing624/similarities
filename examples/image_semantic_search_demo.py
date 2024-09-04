@@ -25,11 +25,10 @@ def sim_and_search(m):
     queries = imgs1
     res = m.most_similar(queries, topn=3)
     print('sim search: ', res)
-    for q_id, c in res.items():
+    for q_id, c in enumerate(res):
         print('query:', image_fps1[q_id])
         print("search top 3:")
-        for corpus_id, s in c.items():
-            print(f'\t{m.corpus[corpus_id].filename}: {s:.4f}')
+        print(f'\t{c}')
     print('-' * 50 + '\n')
 
 

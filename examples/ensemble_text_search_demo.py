@@ -27,11 +27,10 @@ def sim_and_search(m):
     m.add_corpus(corpus)
     res = m.most_similar(queries, topn=3)
     print('sim search: ', res)
-    for q_id, c in res.items():
+    for q_id, c in enumerate(res):
         print('query:', queries[q_id])
         print("search top 3:")
-        for corpus_id, s in c.items():
-            print(f'\t{m.corpus[corpus_id]}: {s:.4f}')
+        print(f'\t{c}')
     print('-' * 50 + '\n')
 
 

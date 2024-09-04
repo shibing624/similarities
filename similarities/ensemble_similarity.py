@@ -127,18 +127,19 @@ class EnsembleSimilarity(SimilarityABC):
         # For similarity scores, the corresponding distance is 1 - similarity
         return [1 - sim_score for sim_score in self.similarity(a, b)]
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10) -> List[List[Dict]]:
         """
         Find the topn most similar texts to the query against the corpus.
         :param queries: list of str or str
         :param topn: int
-        :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing cosine similarity scores.
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
+        result = []
         # Calculate weighted reciprocal rank fusion for each query
         for qid, query in queries.items():
             # Store RRF scores for each document in corpus
@@ -149,14 +150,23 @@ class EnsembleSimilarity(SimilarityABC):
                 top_docs = similarity.most_similar(query, topn=topn)
 
                 # For each similar document, calculate its RRF score
-                if top_docs and len(list(top_docs.values())[0]) > 0:
-                    for _qid, doc_scores in top_docs.items():
-                        for rank, (doc_id, score) in enumerate(doc_scores.items()):
+                if top_docs and len(top_docs) > 0:
+                    for doc_scores in top_docs:
+                        for rank, v in enumerate(doc_scores):
+                            doc_id = v["corpus_id"]
+                            score = v["score"]
                             rrf_score = weight / (rank + self.c)
                             rrf_scores[doc_id] = rrf_scores.get(doc_id, 0) + rrf_score
             # Order by scores and get only topn
             sorted_by_score = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)[:topn]
-            result[qid] = {doc_id: score for doc_id, score in sorted_by_score}
+            q_res = []
+            for doc_id, score in sorted_by_score:
+                q_res.append({
+                    "corpus_id": doc_id,
+                    "corpus_doc": self.corpus.get(doc_id, ""),
+                    "score": score
+                })
+            result.append(q_res)
         return result
 
     def save_corpus_embeddings(self, emb_dir: str = "corpus_embs"):

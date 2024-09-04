@@ -108,29 +108,32 @@ class ImageHashSimilarity(SimilarityABC):
         sim_scores = self.similarity(a, b)
         return [1 - score for score in sim_scores]
 
-    def most_similar(self, queries: Union[Image.Image, List[Image.Image], Dict[int, Image.Image]], topn: int = 10):
+    def most_similar(
+            self,
+            queries: Union[Image.Image, List[Image.Image], Dict[int, Image.Image]],
+            topn: int = 10,
+    ) -> List[List[Dict]]:
         """
         Find the topn most similar images to the query against the corpus.
         :param queries: str of list of str, image file paths
         :param topn: int
-        :return: dict of dicts, {query_id: {corpus_id, score}, ...}
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing similarity scores.
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
+        result = []
 
         for qid, query in queries.items():
             q_res = []
             q_seq = str(self.hash_function(query, self.hash_size))
             for (corpus_id, doc), doc_seq in zip(self.corpus.items(), self.corpus_embeddings):
                 score = self._sim_score(q_seq, doc_seq)
-                q_res.append((corpus_id, score))
-            q_res.sort(key=lambda x: x[1], reverse=True)
-            q_res = q_res[:topn]
-            for corpus_id, score in q_res:
-                result[qid][corpus_id] = score
+                q_res.append({'corpus_id': corpus_id, 'corpus_doc': doc, 'score': score})
+            q_res = sorted(q_res, key=lambda x: x['score'], reverse=True)[:topn]
+            result.append(q_res)
         return result
 
 
@@ -204,7 +207,7 @@ class SiftSimilarity(SimilarityABC):
             k = math.sqrt(height * width / (max_height * max_width))
             img = img.resize(
                 (round(height / k), round(width / k)),
-                Image.ANTIALIAS
+                Image.Resampling.LANCZOS
             )
         img_array = np.array(img)
         return img_array
@@ -273,28 +276,30 @@ class SiftSimilarity(SimilarityABC):
         sim_scores = self.similarity(a, b)
         return [1 - score for score in sim_scores]
 
-    def most_similar(self, queries: Union[Image.Image, List[Image.Image], Dict[int, Image.Image]], topn: int = 10):
+    def most_similar(
+            self,
+            queries: Union[Image.Image, List[Image.Image], Dict[int, Image.Image]],
+            topn: int = 10
+    ) -> List[List[Dict]]:
         """
         Find the topn most similar images to the query against the corpus.
         :param queries: PIL images
         :param topn: int
-        :return: dict of dicts, {query_id: {corpus_id, score}, ...}
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing similarity scores.
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
+        result = []
 
         for qid, query in queries.items():
             q_res = []
             _, q_desc = self.calculate_descr(query)
             for (corpus_id, doc), doc_desc in zip(enumerate(self.corpus), self.corpus_embeddings):
                 score = self._sim_score(q_desc, doc_desc)
-                q_res.append((corpus_id, score))
-            q_res.sort(key=lambda x: x[1], reverse=False)
-            q_res = q_res[:topn]
-            for corpus_id, score in q_res:
-                result[qid][corpus_id] = score
-
+                q_res.append({'corpus_id': corpus_id, 'corpus_doc': doc, 'score': score})
+            q_res = sorted(q_res, key=lambda x: x['score'], reverse=True)[:topn]
+            result.append(q_res)
         return result

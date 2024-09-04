@@ -7,7 +7,7 @@ copy from https://github.com/UKPLab/sentence-transformers/blob/master/sentence_t
 
 import heapq
 import queue
-from typing import Union
+from typing import Union, List, Dict
 
 import numpy as np
 import torch
@@ -98,7 +98,7 @@ def semantic_search(
         corpus_chunk_size: int = 500000,
         top_k: int = 10,
         score_function=cos_sim
-):
+) -> List[List[Dict[str, Union[int, float]]]]:
     """
     This function performs a cosine similarity search between a list of query embeddings and corpus embeddings.
     It can be used for Information Retrieval / Semantic Search for corpora up to about 1 Million entries.
@@ -111,8 +111,8 @@ def semantic_search(
         but requires more memory.
     :param top_k: Retrieve top k matching entries.
     :param score_function: Funtion for computing scores. By default, cosine similarity.
-    :return: Returns a list with one entry for each query. Each entry is a list of dictionaries with the keys
-        'corpus_id' and 'score', sorted by decreasing cosine similarity scores.
+    :return: List[List[Dict[str, Union[int, float]]]]: A list with one entry for each query. Each entry is a list of
+        dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing cosine similarity scores.
     """
 
     if isinstance(query_embeddings, (np.ndarray, np.generic)):
@@ -162,8 +162,7 @@ def semantic_search(
         for doc_itr in range(len(queries_result_list[query_id])):
             score, corpus_id = queries_result_list[query_id][doc_itr]
             queries_result_list[query_id][doc_itr] = {'corpus_id': corpus_id, 'score': score}
-        queries_result_list[query_id] = sorted(queries_result_list[query_id], key=lambda x: x['score'],
-                                               reverse=True)
+        queries_result_list[query_id] = sorted(queries_result_list[query_id], key=lambda x: x['score'], reverse=True)
 
     return queries_result_list
 

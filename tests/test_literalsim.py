@@ -90,58 +90,6 @@ class LiteralCase(unittest.TestCase):
         print(r)
         self.assertEqual(len(r[0]), 2)
 
-    def test_short_text_simhash(self):
-        text1 = '你妈妈喊你回家吃饭哦，回家罗回家罗'
-        text2 = '你妈妈叫你回家吃饭哦，回家罗回家罗'
-        m = SimHashSimilarity()
-        seq1 = m.ori_simhash(text1)
-        seq2 = m.ori_simhash(text2)
-        print(seq1)
-        print(seq2)
-        scores = [m._sim_score(seq1, seq2) for seq1, seq2 in zip([seq1], [seq2])]
-        print(f"{text1} vs {text2} ori_simhash sim score {scores}")
-
-        def simhash_demo(text_a, text_b):
-            """
-            求两文本的相似度
-            :param text_a:
-            :param text_b:
-            :return:
-            """
-            from simhash import Simhash
-            a_simhash = Simhash(text_a)
-            b_simhash = Simhash(text_b)
-            print(a_simhash.value)
-            max_hashbit = max(len(bin(a_simhash.value)), len(bin(b_simhash.value)))
-            # 汉明距离
-            distince = a_simhash.distance(b_simhash)
-            print(distince)
-            similar = 1 - distince / max_hashbit
-            return similar
-
-        similar = simhash_demo(text1, text2)
-        print(f"{text1} vs {text2} simhash_demo sim score {similar}")
-        print(f"{text1} vs {text2} simhash sim score {m.similarity(text1, text2)}")
-
-        text1 = "平台专注于游戏领域,多年的AI技术积淀,一站式提供文本、图片、音/视频内容审核,游戏AI以及数据平台服务"
-        text2 = "平台专注于游戏领域,多年的AI技术积淀,二站式提供文本、图片、音 视频内容审核,游戏AI以及数据平台服务"
-        text3 = '平台专注于游戏领域,多年的AI技术积淀,三站式提供文本、图片、音视频内容审核'
-        similar = simhash_demo(text1, text2)
-        similar2 = simhash_demo(text1, text3)
-        similar3 = simhash_demo(text2, text3)
-        print(similar)
-        print(similar2)
-        print(similar3)
-
-        print(f"{text1} vs {text2} sim score {m.similarity(text1, text2)}")
-        print(m.distance(text1, text2))
-        r = m.most_similar('刘若英是演员')
-        self.assertEqual(len(r[0]), 0)
-        zh_list = ['刘若英是个演员', '他唱歌很好听', 'women喜欢这首歌']
-        m.add_corpus(zh_list)
-        r = m.most_similar('刘若英是演员', topn=2)
-        print(r)
-
     def test_tfidf(self):
         """test_tfidf"""
         text1 = '刘若英是个演员'
@@ -303,11 +251,9 @@ class LiteralCase(unittest.TestCase):
         for i in q:
             res = m.most_similar(i, topn=10)
             print('sim search: ', res)
-            for q_id, c in res.items():
-                print('query:', i)
+            for c in res:
                 print("search res:")
-                for corpus_id, s in c.items():
-                    print(f'\t{m.corpus[corpus_id]}: {s:.4f}')
+                print(f'\t{c}')
             print('-' * 50 + '\n')
 
 

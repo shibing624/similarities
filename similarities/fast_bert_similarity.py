@@ -81,10 +81,22 @@ class AnnoySimilarity(BertSimilarity):
         else:
             logger.warning("No index path given. Index not loaded.")
 
-    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10,
-                     score_function: str = "cos_sim", **kwargs):
-        """Find the topn most similar texts to the query against the corpus."""
-        result = {}
+    def most_similar(
+            self,
+            queries: Union[str, List[str], Dict[str, str]],
+            topn: int = 10,
+            score_function: str = "cos_sim",
+            **kwargs
+    ) -> List[List[Dict]]:
+        """
+        Find the topn most similar texts to the query against the corpus, using Annoy.
+        :param queries: list of str or str
+        :param topn: int
+        :score_function: str, cosine similarity function
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing cosine similarity scores.
+        """
+        result = []
         if self.corpus_embeddings and self.index is None:
             logger.warning(f"No index found. Please add corpus and build index first, e.g. with `build_index()`."
                            f"Now returning slow search result.")
@@ -96,16 +108,21 @@ class AnnoySimilarity(BertSimilarity):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
+        result = []
         queries_texts = list(queries.values())
         queries_embeddings = self.get_embeddings(queries_texts, **kwargs)
         # Annoy get_nns_by_vector can only search for one vector at a time
         for idx, (qid, query) in enumerate(queries.items()):
+            q_res = []
             corpus_ids, distances = self.index.get_nns_by_vector(queries_embeddings[idx], topn, include_distances=True)
             for corpus_id, distance in zip(corpus_ids, distances):
                 score = 1 - (distance ** 2) / 2
-                result[qid][corpus_id] = score
-
+                q_res.append({
+                    "corpus_id": corpus_id,
+                    "corpus_doc": self.corpus.get(corpus_id),
+                    "score": score
+                })
+            result.append(q_res)
         return result
 
 
@@ -187,10 +204,22 @@ class HnswlibSimilarity(BertSimilarity):
         else:
             logger.warning("No index path given. Index not loaded.")
 
-    def most_similar(self, queries: Union[str, List[str], Dict[str, str]], topn: int = 10,
-                     score_function: str = "cos_sim", **kwargs):
-        """Find the topn most similar texts to the query against the corpus."""
-        result = {}
+    def most_similar(
+            self,
+            queries: Union[str, List[str], Dict[str, str]],
+            topn: int = 10,
+            score_function: str = "cos_sim",
+            **kwargs
+    ) -> List[List[Dict]]:
+        """
+        Find the topn most similar texts to the query against the corpus, using Hnswlib.
+        :param queries: list of str or str
+        :param topn: int
+        :score_function: str, cosine similarity function
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing cosine similarity scores.
+        """
+        result = []
         if self.corpus_embeddings and self.index is None:
             logger.warning(f"No index found. Please add corpus and build index first, e.g. with `build_index()`."
                            f"Now returning slow search result.")
@@ -202,16 +231,14 @@ class HnswlibSimilarity(BertSimilarity):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
         queries_texts = list(queries.values())
         queries_embeddings = self.get_embeddings(queries_texts, **kwargs)
         # We use hnswlib knn_query method to find the top_k_hits
         corpus_ids, distances = self.index.knn_query(queries_embeddings, k=topn)
         # We extract corpus ids and scores for each query
         for i, (qid, query) in enumerate(queries.items()):
-            hits = [{'corpus_id': id, 'score': 1 - distance} for id, distance in zip(corpus_ids[i], distances[i])]
+            hits = [{'corpus_id': id, 'corpus_doc': self.corpus.get(id),
+                     'score': 1 - distance} for id, distance in zip(corpus_ids[i], distances[i])]
             hits = sorted(hits, key=lambda x: x['score'], reverse=True)
-            for hit in hits:
-                result[qid][hit['corpus_id']] = hit['score']
-
+            result.append(hits)
         return result

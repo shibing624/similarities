@@ -161,30 +161,28 @@ class SimHashSimilarity(SimilarityABC):
         sim_scores = self.similarity(a, b)
         return [1 - score for score in sim_scores]
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10) -> List[List[Dict]]:
         """
         Find the topn most similar texts to the query against the corpus.
         :param queries: list of str or str
         :param topn: int
-        :return: dict of dicts, {query_id: {corpus_id, score}, ...}
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing cosine similarity scores.
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
+        result = []
 
         for qid, query in queries.items():
             q_res = []
             query_emb = self.simhash(query)
             for (corpus_id, doc), doc_emb in zip(self.corpus.items(), self.corpus_embeddings):
                 score = self._sim_score(query_emb, doc_emb)
-                q_res.append((corpus_id, score))
-            q_res.sort(key=lambda x: x[1], reverse=True)
-            q_res = q_res[:topn]
-            for corpus_id, score in q_res:
-                result[qid][corpus_id] = score
-
+                q_res.append({'corpus_id': corpus_id, 'corpus_doc': doc, 'score': score})
+            q_res = sorted(q_res, key=lambda x: x['score'], reverse=True)[:topn]
+            result.append(q_res)
         return result
 
     def save_corpus_embeddings(self, emb_path: str = "hash_corpus_emb.jsonl"):
@@ -292,26 +290,30 @@ class TfidfSimilarity(SimilarityABC):
         """Compute cosine distance between two keys."""
         return 1 - self.similarity(a, b)
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10) -> List[List[Dict]]:
         """Find the topn most similar texts to the query against the corpus.
         :param queries: list of str or str
         :param topn: int
-        :return dict of dicts, {query_id: {corpus_id, score}, ...}
+        :return List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing cosine similarity scores.
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
-        queries_ids_map = {i: id for i, id in enumerate(list(queries.keys()))}
+        result = []
         queries_texts = list(queries.values())
 
         queries_embeddings = np.array([self.tfidf.get_tfidf(query) for query in queries_texts], dtype=np.float32)
         corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
         all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn)
         for idx, hits in enumerate(all_hits):
+            q_res = []
             for hit in hits[0:topn]:
-                result[queries_ids_map[idx]][hit['corpus_id']] = hit['score']
+                q_res.append({"corpus_id": hit['corpus_id'],
+                              "corpus_doc": self.corpus.get(hit['corpus_id']),
+                              "score": hit['score']})
+            result.append(q_res)
 
         return result
 
@@ -401,12 +403,13 @@ class BM25Similarity(SimilarityABC):
         self.bm25 = BM25Okapi(corpus_seg)
         logger.info(f"Total corpus: {len(self.corpus)}")
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn=10):
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn=10) -> List[List[Dict]]:
         """
         Find the topn most similar texts to the query against the corpus.
         :param queries: input query
         :param topn: int
-        :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing similarity scores.
         """
         if not self.corpus:
             raise ValueError("corpus is None. Please add_corpus first, eg. `add_corpus(corpus)`")
@@ -416,16 +419,15 @@ class BM25Similarity(SimilarityABC):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
+        result = []
         for qid, query in queries.items():
             tokens = jieba.lcut(query)
             scores = self.bm25.get_scores(tokens)
 
-            q_res = [{'corpus_id': corpus_id, 'score': score} for corpus_id, score in enumerate(scores)]
+            q_res = [{'corpus_id': corpus_id, 'corpus_doc': self.corpus.get(corpus_id),
+                      'score': score} for corpus_id, score in enumerate(scores)]
             q_res = sorted(q_res, key=lambda x: x['score'], reverse=True)[:topn]
-            for res in q_res:
-                corpus_id = res['corpus_id']
-                result[qid][corpus_id] = res['score']
+            result.append(q_res)
 
         return result
 
@@ -510,27 +512,31 @@ class WordEmbeddingSimilarity(SimilarityABC):
         """Compute cosine distance between two texts."""
         return 1 - self.similarity(a, b)
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10) -> List[List[Dict]]:
         """
         Find the topn most similar texts to the query against the corpus.
         :param queries: list of str or str
         :param topn: int
-        :return: dict of dicts, {query_id: {corpus_id, score}, ...}
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing similarity scores.
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
-        queries_ids_map = {i: id for i, id in enumerate(list(queries.keys()))}
+        result = []
         queries_texts = list(queries.values())
 
         queries_embeddings = np.array([self._get_vector(query) for query in queries_texts], dtype=np.float32)
         corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
         all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn)
         for idx, hits in enumerate(all_hits):
+            q_res = []
             for hit in hits[0:topn]:
-                result[queries_ids_map[idx]][hit['corpus_id']] = hit['score']
+                q_res.append({"corpus_id": hit['corpus_id'],
+                              "corpus_doc": self.corpus.get(hit['corpus_id']),
+                              "score": hit['score']})
+            result.append(q_res)
 
         return result
 
@@ -700,24 +706,25 @@ class CilinSimilarity(SimilarityABC):
         """Compute cosine distance between two texts."""
         return [1 - s for s in self.similarity(a, b)]
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
-        """Find the topn most similar texts to the query against the corpus."""
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10) -> List[List[Dict]]:
+        """Find the topn most similar texts to the query against the corpus.
+        :param queries: list of str or str
+        :param topn: int
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing cilin similarity scores.
+        """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
-
+        result = []
         for qid, query in queries.items():
             q_res = []
             for corpus_id, doc in self.corpus.items():
                 score = self.similarity(query, doc)[0]
-                q_res.append((corpus_id, score))
-            q_res.sort(key=lambda x: x[1], reverse=True)
-            q_res = q_res[:topn]
-            for corpus_id, score in q_res:
-                result[qid][corpus_id] = score
-
+                q_res.append({'corpus_id': corpus_id, 'corpus_doc': doc, 'score': score})
+            q_res = sorted(q_res, key=lambda x: x['score'], reverse=True)[:topn]
+            result.append(q_res)
         return result
 
 
@@ -829,24 +836,22 @@ class HownetSimilarity(SimilarityABC):
         """Compute Hownet distance between two keys."""
         return [1 - s for s in self.similarity(a, b)]
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10) -> List[List[Dict]]:
         """Find the topn most similar texts to the query against the corpus."""
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
+        result = []
 
         for qid, query in queries.items():
             q_res = []
             for corpus_id, doc in self.corpus.items():
                 score = self.similarity(query, doc)[0]
-                q_res.append((corpus_id, score))
-            q_res.sort(key=lambda x: x[1], reverse=True)
-            q_res = q_res[:topn]
-            for corpus_id, score in q_res:
-                result[qid][corpus_id] = score
+                q_res.append({'corpus_id': corpus_id, 'corpus_doc': doc, 'score': score})
 
+            q_res = sorted(q_res, key=lambda x: x['score'], reverse=True)[:topn]
+            result.append(q_res)
         return result
 
 
@@ -924,24 +929,20 @@ class SameCharsSimilarity(SimilarityABC):
         """Compute cosine distance between two texts."""
         return [1 - s for s in self.similarity(a, b)]
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10) -> List[List[Dict]]:
         """Find the topn most similar texts to the query against the corpus."""
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
-
+        result = []
         for qid, query in queries.items():
             q_res = []
             for corpus_id, doc in self.corpus.items():
                 score = self.similarity(query, doc)[0]
-                q_res.append((corpus_id, score))
-            q_res.sort(key=lambda x: x[1], reverse=True)
-            q_res = q_res[:topn]
-            for corpus_id, score in q_res:
-                result[qid][corpus_id] = score
-
+                q_res.append({'corpus_id': corpus_id, 'corpus_doc': doc, 'score': score})
+            q_res = sorted(q_res, key=lambda x: x['score'], reverse=True)[:topn]
+            result.append(q_res)
         return result
 
 
@@ -1023,22 +1024,18 @@ class SequenceMatcherSimilarity(SimilarityABC):
         """Compute cosine distance between two texts."""
         return [1 - s for s in self.similarity(a, b)]
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10):
+    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10) -> List[List[Dict]]:
         """Find the topn most similar texts to the query against the corpus."""
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
         if isinstance(queries, list):
             queries = {id: query for id, query in enumerate(queries)}
-        result = {qid: {} for qid, query in queries.items()}
-
+        result = []
         for qid, query in queries.items():
             q_res = []
             for corpus_id, doc in self.corpus.items():
                 score = self.similarity(query, doc)[0]
-                q_res.append((corpus_id, score))
-            q_res.sort(key=lambda x: x[1], reverse=True)
-            q_res = q_res[:topn]
-            for corpus_id, score in q_res:
-                result[qid][corpus_id] = score
-
+                q_res.append({'corpus_id': corpus_id, 'corpus_doc': doc, 'score': score})
+            q_res = sorted(q_res, key=lambda x: x['score'], reverse=True)[:topn]
+            result.append(q_res)
         return result

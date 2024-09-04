@@ -86,8 +86,12 @@ class BertSimilarity(SimilarityABC):
         else:
             return getattr(self.sentence_model.bert.pooler.dense, "out_features", None)
 
-    def add_corpus(self, corpus: Union[List[str], Dict[int, str]], batch_size: int = 32,
-                   normalize_embeddings: bool = True):
+    def add_corpus(
+            self,
+            corpus: Union[List[str], Dict[int, str]],
+            batch_size: int = 32,
+            normalize_embeddings: bool = True
+    ):
         """
         Extend the corpus with new documents.
         :param corpus: corpus of documents to use for similarity queries.
@@ -140,7 +144,13 @@ class BertSimilarity(SimilarityABC):
             normalize_embeddings=normalize_embeddings,
         )
 
-    def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]], score_function: str = "cos_sim", **kwargs):
+    def similarity(
+            self,
+            a: Union[str, List[str]],
+            b: Union[str, List[str]],
+            score_function: str = "cos_sim",
+            **kwargs
+    ):
         """
         Compute similarity between two texts.
         :param a: list of str or str
@@ -162,8 +172,13 @@ class BertSimilarity(SimilarityABC):
         """Compute cosine distance between two texts."""
         return 1 - self.similarity(a, b)
 
-    def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn: int = 10,
-                     score_function: str = "cos_sim", **kwargs):
+    def most_similar(
+            self,
+            queries: Union[str, List[str], Dict[int, str]],
+            topn: int = 10,
+            score_function: str = "cos_sim",
+            **kwargs
+    ) -> List[List[Dict]]:
         """
         Find the topn most similar texts to the queries against the corpus.
             It can be used for Information Retrieval / Semantic Search for corpora up to about 1 Million entries.
@@ -171,7 +186,8 @@ class BertSimilarity(SimilarityABC):
         :param topn: int
         :param score_function: function to compute similarity, default cos_sim
         :param kwargs: additional arguments for the similarity function
-        :return: Dict[str, Dict[str, float]], {query_id: {corpus_id: similarity_score}, ...}
+        :return: List[List[Dict]], A list with one entry for each query. Each entry is a list of
+            dict with the keys 'corpus_id', 'corpus_doc' and 'score', sorted by decreasing cosine similarity scores.
         """
         if isinstance(queries, str) or not hasattr(queries, '__len__'):
             queries = [queries]
@@ -181,15 +197,20 @@ class BertSimilarity(SimilarityABC):
             raise ValueError(f"score function: {score_function} must be either (cos_sim) for cosine similarity"
                              " or (dot) for dot product")
         score_function = self.score_functions[score_function]
-        result = {qid: {} for qid, query in queries.items()}
-        queries_ids_map = {i: id for i, id in enumerate(list(queries.keys()))}
+        result = []
         queries_texts = list(queries.values())
         queries_embeddings = self.get_embeddings(queries_texts, convert_to_tensor=True, **kwargs)
         corpus_embeddings = np.array(self.corpus_embeddings, dtype=np.float32)
         all_hits = semantic_search(queries_embeddings, corpus_embeddings, top_k=topn, score_function=score_function)
         for idx, hits in enumerate(all_hits):
+            q_res = []
             for hit in hits[0:topn]:
-                result[queries_ids_map[idx]][hit['corpus_id']] = hit['score']
+                q_res.append({
+                    "corpus_id": hit['corpus_id'],
+                    "corpus_doc": self.corpus.get(hit['corpus_id']),
+                    "score": hit['score']
+                })
+            result.append(q_res)
 
         return result
 
@@ -221,3 +242,5 @@ class BertSimilarity(SimilarityABC):
                 self.corpus_embeddings = corpus_embeddings
         except (IOError, json.JSONDecodeError):
             logger.error("Error: Could not load corpus embeddings from file.")
+        except Exception as e:
+            logger.error(f"Error: {e}")

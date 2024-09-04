@@ -43,11 +43,10 @@ def annoy_demo():
     queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
     res = model.most_similar(queries, topn=3)
     print(res)
-    for q_id, c in res.items():
+    for q_id, c in enumerate(res):
         print('query:', queries[q_id])
         print("search top 3:")
-        for corpus_id, s in c.items():
-            print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
+        print(f'\t{c}')
 
     os.remove(index_file)
     print('-' * 50 + '\n')
@@ -73,11 +72,10 @@ def hnswlib_demo():
     queries = ["如何更换花呗绑定银行卡", "men喜欢这首歌"]
     res = model.most_similar(queries, topn=3)
     print(res)
-    for q_id, c in res.items():
+    for q_id, c in enumerate(res):
         print('query:', queries[q_id])
         print("search top 3:")
-        for corpus_id, s in c.items():
-            print(f'\t{model.corpus[corpus_id]}: {s:.4f}')
+        print(f'\t{c}')
 
     os.remove(index_file)
     print('-' * 50 + '\n')
