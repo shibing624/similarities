@@ -44,6 +44,7 @@ setup(
         "Pillow",
         "fire",
         "autofaiss",
+        "requests",
         "transformers",
     ],
     packages=find_packages(exclude=['tests']),
