@@ -69,9 +69,9 @@ class SimHashSimilarity(SimilarityABC):
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
+        if not corpus_new:
+            return
         self.corpus.update(corpus_new)
-
-        logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_texts = list(corpus_new.values())
         corpus_embeddings = []
         for sentence in tqdm(corpus_texts, desc="Computing corpus SimHash"):
@@ -80,7 +80,7 @@ class SimHashSimilarity(SimilarityABC):
             self.corpus_embeddings += corpus_embeddings
         else:
             self.corpus_embeddings = corpus_embeddings
-        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
+        logger.debug(f"Add {len(corpus_new)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
     def simhash(self, sentence: str):
         """
@@ -258,9 +258,9 @@ class TfidfSimilarity(SimilarityABC):
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
+        if not corpus_new:
+            return
         self.corpus.update(corpus_new)
-
-        logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_texts = list(corpus_new.values())
         corpus_embeddings = []
         for sentence in tqdm(corpus_texts, desc="Computing corpus TFIDF"):
@@ -269,7 +269,7 @@ class TfidfSimilarity(SimilarityABC):
             self.corpus_embeddings += corpus_embeddings
         else:
             self.corpus_embeddings = corpus_embeddings
-        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
+        logger.debug(f"Add {len(corpus_new)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
     def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """
@@ -390,8 +390,10 @@ class BM25Similarity(SimilarityABC):
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
+        if not corpus_new:
+            return
         self.corpus.update(corpus_new)
-        logger.info(f"Add corpus done, new docs: {len(corpus_new)}, all corpus size: {len(self.corpus)}")
+        logger.debug(f"Add corpus done, new docs: {len(corpus_new)}, all corpus size: {len(self.corpus)}")
         self.build_bm25()
 
     def build_bm25(self):
@@ -401,7 +403,6 @@ class BM25Similarity(SimilarityABC):
         corpus_seg = [[w for w in doc if (w.strip().lower() not in self.default_stopwords) and
                        len(w.strip()) > 0] for doc in corpus_seg]
         self.bm25 = BM25Okapi(corpus_seg)
-        logger.info(f"Total corpus: {len(self.corpus)}")
 
     def most_similar(self, queries: Union[str, List[str], Dict[int, str]], topn=10) -> List[List[Dict]]:
         """
@@ -488,16 +489,17 @@ class WordEmbeddingSimilarity(SimilarityABC):
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
+        if not corpus_new:
+            return
         self.corpus.update(corpus_new)
 
-        logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_texts = list(corpus_new.values())
         corpus_embeddings = self._get_vector(corpus_texts, show_progress_bar=True).tolist()
         if self.corpus_embeddings:
             self.corpus_embeddings += corpus_embeddings
         else:
             self.corpus_embeddings = corpus_embeddings
-        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
+        logger.debug(f"Add {len(corpus_new)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
     def _get_vector(self, text, show_progress_bar: bool = False) -> np.ndarray:
         return self.keyedvectors.encode(text, show_progress_bar=show_progress_bar)
@@ -613,10 +615,10 @@ class CilinSimilarity(SimilarityABC):
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
+        if not corpus_new:
+            return
         self.corpus.update(corpus_new)
-
-        logger.info(f"Start add new docs: {len(corpus_new)}")
-        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
+        logger.debug(f"Add {len(corpus_new)} docs, total: {len(self.corpus)}")
 
     @staticmethod
     def load_cilin_dict(path):
@@ -770,10 +772,10 @@ class HownetSimilarity(SimilarityABC):
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
+        if not corpus_new:
+            return
         self.corpus.update(corpus_new)
-
-        logger.info(f"Start add new docs: {len(corpus_new)}")
-        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
+        logger.debug(f"Add {len(corpus_new)} docs, total: {len(self.corpus)}")
 
     @staticmethod
     def load_hownet_dict(path):
@@ -897,10 +899,10 @@ class SameCharsSimilarity(SimilarityABC):
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
+        if not corpus_new:
+            return
         self.corpus.update(corpus_new)
-
-        logger.info(f"Start add new docs: {len(corpus_new)}")
-        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
+        logger.debug(f"Add {len(corpus_new)} docs, total: {len(self.corpus)}")
 
     def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]]):
         """
@@ -988,10 +990,10 @@ class SequenceMatcherSimilarity(SimilarityABC):
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
+        if not corpus_new:
+            return
         self.corpus.update(corpus_new)
-
-        logger.info(f"Start add new docs: {len(corpus_new)}")
-        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}")
+        logger.debug(f"Add {len(corpus_new)} docs, total: {len(self.corpus)}")
 
     def similarity(self, a: Union[str, List[str]], b: Union[str, List[str]],
                    min_same_len: int = 70, min_same_len_score: float = 0.9):

@@ -107,8 +107,9 @@ class ClipSimilarity(SimilarityABC):
             for id, doc in corpus.items():
                 if doc not in list(self.corpus.values()):
                     corpus_new[id] = doc
+        if not corpus_new:
+            return
         self.corpus.update(corpus_new)
-        logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_embeddings = self.get_embeddings(
             list(corpus_new.values()),
             show_progress_bar=True,
@@ -119,7 +120,7 @@ class ClipSimilarity(SimilarityABC):
             self.corpus_embeddings += corpus_embeddings
         else:
             self.corpus_embeddings = corpus_embeddings
-        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
+        logger.debug(f"Add {len(corpus_new)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
     def similarity(
             self,

@@ -99,19 +99,20 @@ class BertSimilarity(SimilarityABC):
         :param normalize_embeddings: normalize embeddings before computing similarity
         :return: corpus, corpus embeddings
         """
-        new_corpus = {}
+        corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
         for id, doc in enumerate(corpus):
             if isinstance(corpus, list):
                 if doc not in self.corpus.values():
-                    new_corpus[start_id + id] = doc
+                    corpus_new[start_id + id] = doc
             else:
                 if doc not in self.corpus.values():
-                    new_corpus[id] = doc
-        self.corpus.update(new_corpus)
-        logger.info(f"Start computing corpus embeddings, new docs: {len(new_corpus)}")
+                    corpus_new[id] = doc
+        if not corpus_new:
+            return
+        self.corpus.update(corpus_new)
         corpus_embeddings = self.get_embeddings(
-            list(new_corpus.values()),
+            list(corpus_new.values()),
             batch_size=batch_size,
             show_progress_bar=True,
             normalize_embeddings=normalize_embeddings,
@@ -121,7 +122,7 @@ class BertSimilarity(SimilarityABC):
             self.corpus_embeddings = self.corpus_embeddings + corpus_embeddings
         else:
             self.corpus_embeddings = corpus_embeddings
-        logger.info(f"Add {len(new_corpus)} docs, total: {len(self.corpus)}, emb len: {len(self.corpus_embeddings)}")
+        logger.debug(f"Add {len(corpus_new)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
     def get_embeddings(
             self,
@@ -224,7 +225,7 @@ class BertSimilarity(SimilarityABC):
             for id, emb in zip(self.corpus.keys(), self.corpus_embeddings):
                 json_obj = {"id": id, "doc": self.corpus[id], "doc_emb": list(emb)}
                 f.write(json.dumps(json_obj, ensure_ascii=False) + "\n")
-        logger.debug(f"Save corpus embeddings to file: {emb_path}.")
+        logger.info(f"Save corpus embeddings to file: {emb_path}.")
 
     def load_corpus_embeddings(self, emb_path: str = "bert_corpus_emb.jsonl"):
         """

@@ -189,7 +189,6 @@ class SiftSimilarity(SimilarityABC):
         if not corpus_new:
             return
         self.corpus.update(corpus_new)
-        logger.info(f"Start computing corpus embeddings, new docs: {len(corpus_new)}")
         corpus_embeddings = []
         for img in tqdm(list(corpus_new.values()), desc="Calculating corpus image SIFT"):
             _, descriptors = self.calculate_descr(img)
@@ -199,7 +198,7 @@ class SiftSimilarity(SimilarityABC):
             self.corpus_embeddings += corpus_embeddings
         else:
             self.corpus_embeddings = corpus_embeddings
-        logger.info(f"Add {len(corpus)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
+        logger.debug(f"Add {len(corpus_new)} docs, total: {len(self.corpus)}, emb size: {len(self.corpus_embeddings)}")
 
     @staticmethod
     def _resize_img_to_array(img, max_height=2000, max_width=2000):
