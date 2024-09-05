@@ -16,7 +16,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 setup(
     name='similarities',
     version=__version__,
-    description='Similarities is a toolkit for compute similarity scores between two sets of strings.',
+    description='Similarities is a toolkit for compute similarity scores between texts, performing text searches.',
     long_description=readme,
     long_description_content_type='text/markdown',
     author='XuMing',
@@ -46,5 +46,7 @@ setup(
         "autofaiss",
         "transformers",
     ],
-    packages=find_packages(),
+packages=find_packages(exclude=['tests']),
+    package_dir={'similarities': 'similarities'},
+    package_data={'similarities': ['*.*', 'data/*.txt']}
 )
