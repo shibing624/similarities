@@ -40,7 +40,8 @@ class ClipModule(nn.Module):
     ):
         super(ClipModule, self).__init__()
         if device is None:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+            logger.debug(f"Device: {self.device}")
         else:
             self.device = device
         self.model_name_or_path = model_name_or_path
@@ -55,7 +56,6 @@ class ClipModule(nn.Module):
         else:
             self.model = CLIPModel.from_pretrained(model_name_or_path)
             self.processor = CLIPProcessor.from_pretrained(processor_name)
-        logger.debug(f"Device: {self.device}")
         self.model.to(self.device)
 
     def __str__(self):
