@@ -101,13 +101,17 @@ class BertSimilarity(SimilarityABC):
         """
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
-        for id, doc in enumerate(corpus):
-            if isinstance(corpus, list):
+        current_id = start_id  # keep track of the current id
+        if isinstance(corpus, list):
+            for id, doc in enumerate(corpus):
                 if doc not in self.corpus.values():
-                    corpus_new[start_id + id] = doc
-            else:
+                    corpus_new[current_id] = doc
+                    current_id += 1
+        else:
+            for id, doc in corpus.items():
                 if doc not in self.corpus.values():
                     corpus_new[id] = doc
+                    current_id += 1
         if not corpus_new:
             return
         self.corpus.update(corpus_new)

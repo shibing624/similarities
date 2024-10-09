@@ -61,14 +61,17 @@ class SimHashSimilarity(SimilarityABC):
         """
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
+        current_id = start_id  # keep track of the current id
         if isinstance(corpus, list):
             for id, doc in enumerate(corpus):
-                if doc not in list(self.corpus.values()):
-                    corpus_new[start_id + id] = doc
+                if doc not in self.corpus.values():
+                    corpus_new[current_id] = doc
+                    current_id += 1
         else:
             for id, doc in corpus.items():
-                if doc not in list(self.corpus.values()):
+                if doc not in self.corpus.values():
                     corpus_new[id] = doc
+                    current_id += 1
         if not corpus_new:
             return
         self.corpus.update(corpus_new)
@@ -250,14 +253,17 @@ class TfidfSimilarity(SimilarityABC):
         """
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
+        current_id = start_id  # keep track of the current id
         if isinstance(corpus, list):
             for id, doc in enumerate(corpus):
-                if doc not in list(self.corpus.values()):
-                    corpus_new[start_id + id] = doc
+                if doc not in self.corpus.values():
+                    corpus_new[current_id] = doc
+                    current_id += 1
         else:
             for id, doc in corpus.items():
-                if doc not in list(self.corpus.values()):
+                if doc not in self.corpus.values():
                     corpus_new[id] = doc
+                    current_id += 1
         if not corpus_new:
             return
         self.corpus.update(corpus_new)
@@ -382,14 +388,17 @@ class BM25Similarity(SimilarityABC):
         """
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
+        current_id = start_id  # keep track of the current id
         if isinstance(corpus, list):
             for id, doc in enumerate(corpus):
-                if doc not in list(self.corpus.values()):
-                    corpus_new[start_id + id] = doc
+                if doc not in self.corpus.values():
+                    corpus_new[current_id] = doc
+                    current_id += 1
         else:
             for id, doc in corpus.items():
-                if doc not in list(self.corpus.values()):
+                if doc not in self.corpus.values():
                     corpus_new[id] = doc
+                    current_id += 1
         if not corpus_new:
             return
         self.corpus.update(corpus_new)
@@ -481,14 +490,17 @@ class WordEmbeddingSimilarity(SimilarityABC):
         """
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
+        current_id = start_id  # keep track of the current id
         if isinstance(corpus, list):
             for id, doc in enumerate(corpus):
-                if doc not in list(self.corpus.values()):
-                    corpus_new[start_id + id] = doc
+                if doc not in self.corpus.values():
+                    corpus_new[current_id] = doc
+                    current_id += 1
         else:
             for id, doc in corpus.items():
-                if doc not in list(self.corpus.values()):
+                if doc not in self.corpus.values():
                     corpus_new[id] = doc
+                    current_id += 1
         if not corpus_new:
             return
         self.corpus.update(corpus_new)
@@ -607,14 +619,17 @@ class CilinSimilarity(SimilarityABC):
         """
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
+        current_id = start_id  # keep track of the current id
         if isinstance(corpus, list):
             for id, doc in enumerate(corpus):
-                if doc not in list(self.corpus.values()):
-                    corpus_new[start_id + id] = doc
+                if doc not in self.corpus.values():
+                    corpus_new[current_id] = doc
+                    current_id += 1
         else:
             for id, doc in corpus.items():
-                if doc not in list(self.corpus.values()):
+                if doc not in self.corpus.values():
                     corpus_new[id] = doc
+                    current_id += 1
         if not corpus_new:
             return
         self.corpus.update(corpus_new)
@@ -764,14 +779,17 @@ class HownetSimilarity(SimilarityABC):
         """
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
+        current_id = start_id  # keep track of the current id
         if isinstance(corpus, list):
             for id, doc in enumerate(corpus):
-                if doc not in list(self.corpus.values()):
-                    corpus_new[start_id + id] = doc
+                if doc not in self.corpus.values():
+                    corpus_new[current_id] = doc
+                    current_id += 1
         else:
             for id, doc in corpus.items():
-                if doc not in list(self.corpus.values()):
+                if doc not in self.corpus.values():
                     corpus_new[id] = doc
+                    current_id += 1
         if not corpus_new:
             return
         self.corpus.update(corpus_new)
@@ -891,14 +909,17 @@ class SameCharsSimilarity(SimilarityABC):
         """
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
+        current_id = start_id  # keep track of the current id
         if isinstance(corpus, list):
             for id, doc in enumerate(corpus):
-                if doc not in list(self.corpus.values()):
-                    corpus_new[start_id + id] = doc
+                if doc not in self.corpus.values():
+                    corpus_new[current_id] = doc
+                    current_id += 1
         else:
             for id, doc in corpus.items():
-                if doc not in list(self.corpus.values()):
+                if doc not in self.corpus.values():
                     corpus_new[id] = doc
+                    current_id += 1
         if not corpus_new:
             return
         self.corpus.update(corpus_new)
@@ -982,14 +1003,17 @@ class SequenceMatcherSimilarity(SimilarityABC):
         """
         corpus_new = {}
         start_id = len(self.corpus) if self.corpus else 0
+        current_id = start_id  # keep track of the current id
         if isinstance(corpus, list):
             for id, doc in enumerate(corpus):
-                if doc not in list(self.corpus.values()):
-                    corpus_new[start_id + id] = doc
+                if doc not in self.corpus.values():
+                    corpus_new[current_id] = doc
+                    current_id += 1
         else:
             for id, doc in corpus.items():
-                if doc not in list(self.corpus.values()):
+                if doc not in self.corpus.values():
                     corpus_new[id] = doc
+                    current_id += 1
         if not corpus_new:
             return
         self.corpus.update(corpus_new)
