@@ -169,7 +169,10 @@ def clip_index(
     :param nb_cores: Number of cores to use. Will try to guess the right number if not provided
     :return: None, save index to image_index_dir and text_index_dir
     """
-    from autofaiss import build_index  # pylint: disable=import-outside-toplevel
+    try:
+        from autofaiss import build_index  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        raise ImportError("autofaiss is required for building indexes. Install it with: pip install similarities[index]")
 
     if image_embeddings_dir and os.path.exists(image_embeddings_dir):
         logger.debug(f"Starting build index from {image_embeddings_dir}")

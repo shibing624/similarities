@@ -106,7 +106,10 @@ def bert_index(
     :param nb_cores: Number of cores to use. Will try to guess the right number if not provided
     :return: None, save index to index_dir
     """
-    from autofaiss import build_index  # pylint: disable=import-outside-toplevel
+    try:
+        from autofaiss import build_index  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        raise ImportError("autofaiss is required for building indexes. Install it with: pip install similarities[index]")
 
     if embeddings_dir and os.path.exists(embeddings_dir):
         logger.debug(f"Starting build index from {embeddings_dir}")

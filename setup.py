@@ -43,10 +43,12 @@ setup(
         "loguru",
         "Pillow",
         "fire",
-        "autofaiss",
         "requests",
         "transformers",
     ],
+    extras_require={
+        "index": ["autofaiss"],
+    },
     packages=find_packages(exclude=['tests']),
     package_dir={'similarities': 'similarities'},
     package_data={'similarities': ['*.*', 'data/*.txt']},
